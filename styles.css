@@ -17,12 +17,22 @@
   --key-ink: #f5f5f2;
   --key-shine: rgba(255, 255, 255, 0.1);
   --kbd-edge: #cfcfc8;
+  --rail: #1a1a1a;
   --ivory: #fff;
-  --ebony: #1c1c1c;
-  --key-line: #c9c9c2;
-  --lit-white: #e8a9b0;
+  --ivory-shade: #ebeae4;
+  --ivory-lip: #d9d8d1;
+  --ebony-top: #3a3a3a;
+  --ebony: #121212;
+  --ebony-lip: #4a4a4a;
+  --key-line: #d0cfc8;
+  --keyboard-shadow: rgba(30, 20, 10, 0.18);
+  --lit-white: #f6d3d6;
+  --lit-white-shade: #e7a3aa;
+  --lit-white-lip: #d4848c;
   --lit-white-ink: #6e0f1a;
-  --lit-black: #b3202f;
+  --lit-black-top: #d23a48;
+  --lit-black: #9e1724;
+  --lit-black-lip: #e0606b;
   --lit-black-ink: #fff;
 
   --font: -apple-system, BlinkMacSystemFont, "Segoe UI Variable Display", "Segoe UI", Roboto, "Noto Sans",
@@ -44,13 +54,23 @@
     --key-ink: #edede8;
     --key-shine: rgba(255, 255, 255, 0.08);
     --kbd-edge: #3a3a38;
-    --ivory: #cfcfc9;
-    --ebony: #141414;
-    --key-line: #77776f;
-    --lit-white: #d3787e;
+    --rail: #262626;
+    --ivory: #d6d6cf;
+    --ivory-shade: #b9b9b2;
+    --ivory-lip: #a2a29b;
+    --ebony-top: #2e2e2e;
+    --ebony: #0b0b0b;
+    --ebony-lip: #3c3c3c;
+    --key-line: #8d8d86;
+    --keyboard-shadow: rgba(0, 0, 0, 0.6);
+    --lit-white: #eba3a8;
+    --lit-white-shade: #d27a81;
+    --lit-white-lip: #b8626a;
     --lit-white-ink: #3d070d;
-    --lit-black: #f0646b;
-    --lit-black-ink: #151515;
+    --lit-black-top: #f58a8f;
+    --lit-black: #e0505a;
+    --lit-black-lip: #f9aeb1;
+    --lit-black-ink: #1a0306;
   }
 }
 
@@ -67,13 +87,23 @@
   --key-ink: #edede8;
   --key-shine: rgba(255, 255, 255, 0.08);
   --kbd-edge: #3a3a38;
-  --ivory: #cfcfc9;
-  --ebony: #141414;
-  --key-line: #77776f;
-  --lit-white: #d3787e;
+  --rail: #262626;
+  --ivory: #d6d6cf;
+  --ivory-shade: #b9b9b2;
+  --ivory-lip: #a2a29b;
+  --ebony-top: #2e2e2e;
+  --ebony: #0b0b0b;
+  --ebony-lip: #3c3c3c;
+  --key-line: #8d8d86;
+  --keyboard-shadow: rgba(0, 0, 0, 0.6);
+  --lit-white: #eba3a8;
+  --lit-white-shade: #d27a81;
+  --lit-white-lip: #b8626a;
   --lit-white-ink: #3d070d;
-  --lit-black: #f0646b;
-  --lit-black-ink: #151515;
+  --lit-black-top: #f58a8f;
+  --lit-black: #e0505a;
+  --lit-black-lip: #f9aeb1;
+  --lit-black-ink: #1a0306;
 }
 
 /* ---------- Base ---------- */
@@ -324,6 +354,8 @@ button {
 
 /* ---------- Keyboard diagram: where the scale sits on the piano ---------- */
 
+/* Drawn like a real keyboard seen from above: a lacquer rail with the red felt strip
+   along the back, white keys with a front edge, and raised black keys that cast a shadow. */
 .keyboard {
   --white-key: min(2.75rem, calc((100vw - 2 * var(--gutter)) / 11));
   position: relative;
@@ -336,11 +368,26 @@ button {
   margin-top: clamp(1rem, 3.5svh, 2.5rem);
   overflow: hidden; /* crops the black keys that hang over either end */
   border: 1px solid var(--key-line);
-  border-radius: 0 0 6px 6px;
-  background: var(--ivory);
+  border-top: 6px solid var(--rail);
+  border-radius: 3px 3px 8px 8px;
+  background: var(--key-line); /* shows through the gaps between keys */
+  box-shadow: 0 10px 18px -10px var(--keyboard-shadow), 0 1px 2px var(--keyboard-shadow);
   font-size: max(0.625rem, calc(var(--white-key) * 0.36));
   font-weight: 600;
   line-height: 1;
+}
+
+/* The felt strip, lying over the back of the keys. */
+.keyboard::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: 2;
+  height: 2px;
+  background: var(--felt);
+  opacity: 0.85;
 }
 
 .key {
@@ -351,8 +398,13 @@ button {
 
 .key--white {
   flex: 1;
-  padding-bottom: 0.6em;
-  background: var(--ivory);
+  padding-bottom: 0.75em;
+  border-radius: 0 0 4px 4px;
+  /* A touch of shade under the rail, then ivory fading towards the front edge. */
+  background:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.12), rgba(0, 0, 0, 0) 9%),
+    linear-gradient(180deg, var(--ivory) 0%, var(--ivory) 55%, var(--ivory-shade) 100%);
+  box-shadow: inset 0 -0.3em 0 var(--ivory-lip), inset 0 -0.36em 0 rgba(255, 255, 255, 0.5);
   color: var(--ink);
 }
 
@@ -366,20 +418,35 @@ button {
   z-index: 1;
   width: calc(100% / var(--white-keys, 10) * 0.58);
   height: 60%;
-  padding-bottom: 0.45em;
+  padding-bottom: 0.6em;
   border-radius: 0 0 3px 3px;
-  background: var(--ebony);
+  /* Raised key: lit from above, with a lighter bevel on its front face and a shadow on the keys below. */
+  background: linear-gradient(180deg, var(--ebony) 0%, var(--ebony-top) 82%, var(--ebony) 100%);
+  box-shadow:
+    inset 0 -0.32em 0 var(--ebony-lip),
+    inset 1px 0 0 rgba(255, 255, 255, 0.06),
+    inset -1px 0 0 rgba(0, 0, 0, 0.4),
+    1px 3px 4px rgba(0, 0, 0, 0.35);
+  color: #fff;
   font-size: 0.85em;
   transform: translateX(-50%);
 }
 
 .key--white.key--in-scale {
-  background: var(--lit-white);
+  background:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0) 9%),
+    linear-gradient(180deg, var(--lit-white) 0%, var(--lit-white-shade) 100%);
+  box-shadow: inset 0 -0.3em 0 var(--lit-white-lip), inset 0 -0.36em 0 rgba(255, 255, 255, 0.35);
   color: var(--lit-white-ink);
 }
 
 .key--black.key--in-scale {
-  background: var(--lit-black);
+  background: linear-gradient(180deg, var(--lit-black) 0%, var(--lit-black-top) 82%, var(--lit-black) 100%);
+  box-shadow:
+    inset 0 -0.32em 0 var(--lit-black-lip),
+    inset 1px 0 0 rgba(255, 255, 255, 0.15),
+    inset -1px 0 0 rgba(0, 0, 0, 0.25),
+    1px 3px 4px rgba(0, 0, 0, 0.35);
   color: var(--lit-black-ink);
 }
 
