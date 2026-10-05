@@ -1,7 +1,8 @@
 /* ==========================================================================
    Piano Scale Randomizer
-   Key white and lacquer black, with the red of the felt behind piano keys
-   as the one accent, used only to mark state (active filter, focus).
+   Key white and lacquer black, with the red of the felt behind piano keys as
+   the one accent. It marks what's active: the filter, focus, and the scale's
+   keys on the keyboard diagram.
    ========================================================================== */
 
 :root {
@@ -16,6 +17,13 @@
   --key-ink: #f5f5f2;
   --key-shine: rgba(255, 255, 255, 0.1);
   --kbd-edge: #cfcfc8;
+  --ivory: #fff;
+  --ebony: #1c1c1c;
+  --key-line: #c9c9c2;
+  --lit-white: #e8a9b0;
+  --lit-white-ink: #6e0f1a;
+  --lit-black: #b3202f;
+  --lit-black-ink: #fff;
 
   --font: -apple-system, BlinkMacSystemFont, "Segoe UI Variable Display", "Segoe UI", Roboto, "Noto Sans",
     "Helvetica Neue", Arial, sans-serif;
@@ -27,15 +35,22 @@
   :root:not([data-theme="light"]) {
     color-scheme: dark;
     --paper: #000;
-    --ink: #ededE8;
+    --ink: #edede8;
     --muted: #8f8f89;
     --felt: #f0646b;
-    --key: #2a2a2a;
-    --key-hover: #353535;
-    --key-edge: #171717;
-    --key-ink: #ededE8;
+    --key: #333;
+    --key-hover: #3d3d3d;
+    --key-edge: #1c1c1c;
+    --key-ink: #edede8;
     --key-shine: rgba(255, 255, 255, 0.08);
     --kbd-edge: #3a3a38;
+    --ivory: #cfcfc9;
+    --ebony: #141414;
+    --key-line: #77776f;
+    --lit-white: #d3787e;
+    --lit-white-ink: #3d070d;
+    --lit-black: #f0646b;
+    --lit-black-ink: #151515;
   }
 }
 
@@ -43,15 +58,22 @@
 :root[data-theme="dark"] {
   color-scheme: dark;
   --paper: #000;
-  --ink: #ededE8;
+  --ink: #edede8;
   --muted: #8f8f89;
   --felt: #f0646b;
-  --key: #2a2a2a;
-  --key-hover: #353535;
-  --key-edge: #171717;
-  --key-ink: #ededE8;
+  --key: #333;
+  --key-hover: #3d3d3d;
+  --key-edge: #1c1c1c;
+  --key-ink: #edede8;
   --key-shine: rgba(255, 255, 255, 0.08);
   --kbd-edge: #3a3a38;
+  --ivory: #cfcfc9;
+  --ebony: #141414;
+  --key-line: #77776f;
+  --lit-white: #d3787e;
+  --lit-white-ink: #3d070d;
+  --lit-black: #f0646b;
+  --lit-black-ink: #151515;
 }
 
 /* ---------- Base ---------- */
@@ -66,6 +88,7 @@ html {
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
   background: var(--paper);
+  overscroll-behavior-y: none; /* no pull-to-refresh, which would reset the filter mid-practice */
 }
 
 body {
@@ -203,6 +226,7 @@ button {
   margin: 0 auto;
   padding: 0 max(var(--gutter), env(safe-area-inset-right)) max(1rem, env(safe-area-inset-bottom))
     max(var(--gutter), env(safe-area-inset-left));
+  overflow-x: clip; /* the slide-in animation briefly reaches past the edge on narrow phones */
 }
 
 .scale {
@@ -211,13 +235,18 @@ button {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 1rem 0 2.5rem; /* sit a little above center, where the eye expects it */
+  padding: 1rem 0 1.5rem;
   text-align: center;
   /* Leave horizontal swipes to the page (swipe left for the next scale); keep scrolling and zoom. */
   touch-action: pan-y pinch-zoom;
   -webkit-touch-callout: none;
   -webkit-user-select: none;
   user-select: none;
+}
+
+/* Zoomed in, sideways drags pan the page instead (script.js ignores them as swipes). */
+.scale.is-zoomed {
+  touch-action: manipulation;
 }
 
 .scale-name {
@@ -228,8 +257,8 @@ button {
 
 .tonic {
   display: block;
-  font-size: clamp(6rem, min(44vw, 27vh), 14rem);
-  font-size: clamp(6rem, min(44vw, 27svh), 14rem);
+  font-size: clamp(4.5rem, min(40vw, 21vh), 14rem);
+  font-size: clamp(4.5rem, min(40vw, 21svh), 14rem);
   font-weight: 600;
   line-height: 1;
   letter-spacing: -0.03em;
@@ -250,11 +279,12 @@ button {
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 0.3em 0;
   width: min(100%, 9em);
-  margin: clamp(1.75rem, 6vh, 3.5rem) 0 0;
-  margin: clamp(1.75rem, 6svh, 3.5rem) 0 0;
+  margin: clamp(1.25rem, 4vh, 3rem) 0 0;
+  margin: clamp(1.25rem, 4svh, 3rem) 0 0;
   padding: 0;
   list-style: none;
-  font-size: clamp(2rem, 11.5vw, 3rem);
+  font-size: clamp(1.75rem, min(11.5vw, 6.5vh), 3rem);
+  font-size: clamp(1.75rem, min(11.5vw, 6.5svh), 3rem);
   font-weight: 600;
   line-height: 1.2;
 }
@@ -290,6 +320,67 @@ button {
   width: 0.4em;
   height: 0.4em;
   vertical-align: 0.13em;
+}
+
+/* ---------- Keyboard diagram: where the scale sits on the piano ---------- */
+
+.keyboard {
+  --white-key: min(2.75rem, calc((100vw - 2 * var(--gutter)) / 11));
+  position: relative;
+  display: flex;
+  width: calc(var(--white-keys, 10) * var(--white-key));
+  max-width: 100%;
+  height: min(calc(var(--white-key) * 2.6), 13vh);
+  height: min(calc(var(--white-key) * 2.6), 13svh);
+  margin-top: clamp(1rem, 3.5vh, 2.5rem);
+  margin-top: clamp(1rem, 3.5svh, 2.5rem);
+  overflow: hidden; /* crops the black keys that hang over either end */
+  border: 1px solid var(--key-line);
+  border-radius: 0 0 6px 6px;
+  background: var(--ivory);
+  font-size: max(0.625rem, calc(var(--white-key) * 0.36));
+  font-weight: 600;
+  line-height: 1;
+}
+
+.key {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.key--white {
+  flex: 1;
+  padding-bottom: 0.6em;
+  background: var(--ivory);
+  color: var(--ink);
+}
+
+.key--white + .key--white {
+  border-left: 1px solid var(--key-line);
+}
+
+.key--black {
+  position: absolute;
+  top: 0;
+  z-index: 1;
+  width: calc(100% / var(--white-keys, 10) * 0.58);
+  height: 60%;
+  padding-bottom: 0.45em;
+  border-radius: 0 0 3px 3px;
+  background: var(--ebony);
+  font-size: 0.85em;
+  transform: translateX(-50%);
+}
+
+.key--white.key--in-scale {
+  background: var(--lit-white);
+  color: var(--lit-white-ink);
+}
+
+.key--black.key--in-scale {
+  background: var(--lit-black);
+  color: var(--lit-black-ink);
 }
 
 /* ---------- Next scale: a key that travels when pressed ---------- */
@@ -378,28 +469,95 @@ kbd {
     --gutter: 2rem;
   }
 
+  .tonic {
+    font-size: clamp(4.5rem, min(40vw, 22vh), 14rem);
+    font-size: clamp(4.5rem, min(40vw, 22svh), 14rem);
+  }
+
+  .keyboard {
+    --white-key: clamp(2.5rem, 3.6vw, 3.25rem);
+    height: min(calc(var(--white-key) * 2.6), 14vh);
+    height: min(calc(var(--white-key) * 2.6), 14svh);
+  }
+
   .next {
     max-width: 20rem;
   }
 }
 
-/* Phones held sideways: one row of notes and sizes set by height, so everything fits without scrolling. */
-@media (orientation: landscape) and (max-height: 30rem) {
+/* Short phones: tighten the vertical rhythm so the keyboard and Next still fit without scrolling. */
+@media (orientation: portrait) and (max-height: 36rem) {
   .scale {
-    padding: 0.25rem 0 0.75rem;
+    padding: 0.5rem 0 0.75rem;
   }
 
   .tonic {
-    font-size: clamp(4rem, 26vh, 14rem);
-    font-size: clamp(4rem, 26svh, 14rem);
+    font-size: clamp(3.5rem, 18vh, 14rem);
+    font-size: clamp(3.5rem, 18svh, 14rem);
   }
 
   .notes {
+    margin-top: 0.75rem;
+    font-size: clamp(1.5rem, 6vh, 3rem);
+    font-size: clamp(1.5rem, 6svh, 3rem);
+  }
+
+  .keyboard {
+    height: min(calc(var(--white-key) * 2.6), 12vh);
+    height: min(calc(var(--white-key) * 2.6), 12svh);
+    margin-top: 0.75rem;
+  }
+
+  .next {
+    min-height: 3.25rem;
+  }
+}
+
+/* Phones held sideways: the scale's name on the left, its notes and keys on the right. */
+@media (orientation: landscape) and (max-height: 30rem) {
+  .scale {
+    display: grid;
+    grid-template-areas:
+      "name notes"
+      "name keyboard";
+    align-content: center;
+    justify-content: center;
+    align-items: center;
+    gap: 0.75rem clamp(1.5rem, 6vw, 4rem);
+    padding: 0.25rem 0 0.75rem;
+  }
+
+  .scale-name {
+    grid-area: name;
+  }
+
+  .tonic {
+    font-size: clamp(3.5rem, 26vh, 14rem);
+    font-size: clamp(3.5rem, 26svh, 14rem);
+  }
+
+  .notes {
+    grid-area: notes;
     grid-template-columns: repeat(8, minmax(0, 1fr));
-    width: min(100%, 14.5em);
-    margin-top: 1rem;
-    font-size: clamp(1.5rem, 9vh, 2.25rem);
-    font-size: clamp(1.5rem, 9svh, 2.25rem);
+    width: 14.5em;
+    margin: 0;
+    font-size: clamp(1.25rem, 8vh, 2.25rem);
+    font-size: clamp(1.25rem, 8svh, 2.25rem);
+  }
+
+  .keyboard {
+    --white-key: clamp(1.25rem, 8vh, 2.25rem);
+    grid-area: keyboard;
+    justify-self: center;
+    height: calc(var(--white-key) * 2.6);
+    margin: 0;
+  }
+
+  /* A custom property can't fall back on its own, so only switch to svh where it's understood. */
+  @supports (height: 1svh) {
+    .keyboard {
+      --white-key: clamp(1.25rem, 8svh, 2.25rem);
+    }
   }
 
   .next {
@@ -428,6 +586,11 @@ kbd {
 
   .filter-option[aria-pressed="true"]::after {
     background: Highlight;
+    forced-color-adjust: none;
+  }
+
+  /* System colors flatten the keys, so keep the diagram's own colors. */
+  .keyboard {
     forced-color-adjust: none;
   }
 }

@@ -1,6 +1,6 @@
 /*
  * Page behavior: deals random scales and wires up the controls.
- * Which scales exist, and how they're spelled, lives in scales.js.
+ * The scales themselves (spelling, keyboard layout, dealing order) live in scales.js.
  */
 (function () {
   'use strict';
@@ -10,14 +10,17 @@
   const ACCIDENTAL_GLYPHS = { '-2': 'double-flat', '-1': 'flat', 1: 'sharp', 2: 'double-sharp' };
   const SWIPE_MIN_DISTANCE = 56; // px
   const SWIPE_MAX_DURATION = 600; // ms
+  const ANNOUNCEMENT_LIFETIME = 3000; // ms
 
   const root = document.documentElement;
+  const toolbar = document.querySelector('.toolbar');
   const scaleArea = document.getElementById('scale');
   const scaleName = scaleArea.querySelector('.scale-name');
   const tonicEl = document.getElementById('tonic');
   const qualityEl = document.getElementById('quality');
   const spokenNameEl = document.getElementById('scale-spoken');
   const notesEl = document.getElementById('notes');
+  const keyboardEl = document.getElementById('keyboard');
   const announcer = document.getElementById('announcer');
   const nextButton = document.getElementById('next');
   const themeButton = document.getElementById('theme-toggle');
@@ -26,44 +29,12 @@
   const defaultThemeColors = themeColorMetas.map((meta) => meta.content);
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
   const systemDark = window.matchMedia('(prefers-color-scheme: dark)');
+  const viewport = window.visualViewport;
 
   let filter = 'all';
-  let round = []; // scales still to come before any of them repeats
+  let deal = createDealer(scalesIn(filter));
   let current = null; // { type, pitchClass } of the scale on screen
-
-  /* ---------- Dealing scales ---------- */
-
-  function scalesInFilter() {
-    const scales = [];
-    for (const type of SCALE_TYPES) {
-      if (filter !== 'all' && type.group !== filter) continue;
-      for (let pitchClass = 0; pitchClass < 12; pitchClass++) scales.push({ type, pitchClass });
-    }
-    return scales;
-  }
-
-  function shuffle(items) {
-    for (let i = items.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [items[i], items[j]] = [items[j], items[i]];
-    }
-    return items;
-  }
-
-  /**
-   * Deals scales in shuffled rounds, so every scale in the filter comes up once
-   * before any comes up again, and the scale on screen is never dealt twice in a row.
-   */
-  function drawScale() {
-    if (round.length === 0) {
-      round = shuffle(scalesInFilter());
-      const last = round.length - 1;
-      if (current && last > 0 && round[last].type === current.type && round[last].pitchClass === current.pitchClass) {
-        [round[0], round[last]] = [round[last], round[0]];
-      }
-    }
-    return round.pop();
-  }
+  let announcementTimer = 0;
 
   /* ---------- Rendering ---------- */
 
@@ -98,13 +69,49 @@
     return item;
   }
 
+  function keyElement(color, key) {
+    const element = document.createElement('div');
+    element.className = key.note ? `key key--${color} key--in-scale` : `key key--${color}`;
+    if (key.note) {
+      const label = document.createElement('span');
+      label.className = 'key-label';
+      label.append(drawnNote(key.note));
+      element.append(label);
+    }
+    return element;
+  }
+
+  /** Draws the stretch of keyboard around the scale, with the scale's keys lit and named. */
+  function renderKeyboard(notes) {
+    const { whiteKeys, blackKeys } = keyboardFor(notes);
+    keyboardEl.style.setProperty('--white-keys', whiteKeys.length);
+    keyboardEl.replaceChildren(
+      ...whiteKeys.map((key) => keyElement('white', key)),
+      ...blackKeys.map((key) => {
+        const element = keyElement('black', key);
+        element.style.left = `${(key.x / whiteKeys.length) * 100}%`;
+        return element;
+      }),
+    );
+  }
+
+  function announce(message) {
+    announcer.textContent = message;
+    // Clear it once it has been read out, so reading through the page later doesn't hear the scale twice.
+    clearTimeout(announcementTimer);
+    announcementTimer = setTimeout(() => {
+      announcer.textContent = '';
+    }, ANNOUNCEMENT_LIFETIME);
+  }
+
   function render(scale) {
     const name = `${describeNote(scale.tonic)} ${scale.type.name.toLowerCase()}`;
     tonicEl.replaceChildren(drawnNote(scale.tonic));
     qualityEl.textContent = scale.type.name;
     spokenNameEl.textContent = name;
     notesEl.replaceChildren(...scale.notes.map(noteItem));
-    announcer.textContent = `${name}: ${scale.notes.map(describeNote).join(', ')}`;
+    renderKeyboard(scale.notes);
+    announce(`${name}: ${scale.notes.map(describeNote).join(', ')}`);
   }
 
   /** The new scale slides in from the right, the direction "next" points. */
@@ -117,10 +124,11 @@
     const timing = { duration: 280, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' };
     scaleName.animate(frames, timing);
     notesEl.animate(frames, { ...timing, delay: 40, fill: 'backwards' });
+    keyboardEl.animate(frames, { ...timing, delay: 80, fill: 'backwards' });
   }
 
   function showNextScale() {
-    current = drawScale();
+    current = deal(current);
     render(buildScale(current.type, current.pitchClass));
     playEntrance();
   }
@@ -128,7 +136,7 @@
   function setFilter(value) {
     if (value !== filter) {
       filter = value;
-      round = []; // deal a fresh round from the new selection
+      deal = createDealer(scalesIn(value)); // a fresh round from the new selection
       for (const button of filterButtons) {
         button.setAttribute('aria-pressed', String(button.dataset.filter === value));
       }
@@ -178,11 +186,16 @@
     if (!event.repeat) showNextScale();
   }
 
+  /** Pinch-zoomed in, horizontal drags belong to the browser for panning, not to the swipe. */
+  function isZoomed() {
+    return Boolean(viewport) && viewport.scale > 1.01;
+  }
+
   let swipeStart = null;
 
   function onPointerDown(event) {
     swipeStart =
-      event.pointerType !== 'mouse' && event.isPrimary
+      event.pointerType !== 'mouse' && event.isPrimary && !isZoomed()
         ? { x: event.clientX, y: event.clientY, time: event.timeStamp }
         : null;
   }
@@ -203,8 +216,11 @@
     button.addEventListener('click', () => setFilter(button.dataset.filter));
   }
   themeButton.addEventListener('click', toggleTheme);
-  // Clicking the theme button with a mouse shouldn't leave focus on it, or Space would toggle the theme.
-  themeButton.addEventListener('mousedown', (event) => event.preventDefault());
+  // A mouse click shouldn't leave focus on the filter or theme buttons: Space and → would then
+  // draw a focus ring there (or toggle the theme) instead of just dealing the next scale.
+  toolbar.addEventListener('mousedown', (event) => {
+    if (event.target.closest('button')) event.preventDefault();
+  });
   systemDark.addEventListener('change', syncThemeUi);
   document.addEventListener('keydown', onKeydown);
   scaleArea.addEventListener('pointerdown', onPointerDown);
@@ -212,6 +228,9 @@
   scaleArea.addEventListener('pointercancel', () => {
     swipeStart = null;
   });
+  if (viewport) {
+    viewport.addEventListener('resize', () => scaleArea.classList.toggle('is-zoomed', isZoomed()));
+  }
   // iOS Safari only applies :active styles (the key press) when a touch listener exists.
   document.addEventListener('touchstart', () => {}, { passive: true });
 

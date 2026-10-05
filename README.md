@@ -8,9 +8,10 @@ A random piano scale to practice, readable from the music stand. Open it on your
 
 - **Next scale:** tap the button, swipe left across the scale, or press <kbd>Space</kbd> or <kbd>→</kbd>.
 - **Filter:** All, Major or Minor, at the top left. Tapping the active filter also deals the next scale.
+- **Keyboard diagram:** the scale's keys are lit on a picture of the piano and labelled with their notes, so beginners can see exactly which keys to play.
 - Scales come in shuffled rounds: every scale in the filter appears once before any repeats, and the same scale never appears twice in a row.
 - Light and dark mode follow your device. The button at the top right overrides that, and the choice is remembered on that device.
-- On a phone, **Add to Home Screen** opens it full screen, like an app.
+- On a phone, **Add to Home Screen** opens it like an app, without the browser's address bar.
 
 Every scale is spelled in its usual key, with each letter used once: D♭ major rather than C♯ major, G♯ minor rather than A♭ minor. F♯/G♭ major and D♯/E♭ minor are equally common keys, so either spelling can come up.
 
@@ -27,10 +28,16 @@ In the repository, go to **Settings → Pages**, set **Source** to *Deploy from 
 Add one line to `SCALE_TYPES` in [`scales.js`](scales.js):
 
 ```js
-{ name: 'Harmonic Minor', group: 'minor', degrees: '1 2 b3 4 5 b6 7' },
+{ name: 'Dorian', group: 'minor', degrees: '1 2 b3 4 5 6 b7' },
 ```
 
-`degrees` lists the scale against the major scale (`b3` is a flattened third, `#4` a raised fourth), which is enough to spell it correctly in every key. `group` must match a filter button's `data-filter` in `index.html`. To give a new group its own filter, add a button there.
+- `degrees` lists the scale against the major scale (`b3` is a flattened third, `#4` a raised fourth). The app spells every key from it and lights the right keys on the keyboard.
+- `group` must match a filter button's `data-filter` in `index.html`. To give a new group its own filter, add a button there.
+- `keySignature` is optional. Use it when a scale is written in another scale's key, so the tonic gets the conventional name. Harmonic and melodic minor are written in their natural minor key, which gives C♯ harmonic minor rather than D♭:
+
+  ```js
+  { name: 'Harmonic Minor', group: 'minor', degrees: '1 2 b3 4 5 b6 7', keySignature: '1 2 b3 4 5 b6 b7' },
+  ```
 
 ## Tests
 
@@ -38,16 +45,16 @@ Add one line to `SCALE_TYPES` in [`scales.js`](scales.js):
 node --test
 ```
 
-Needs Node 18 or newer and nothing else. The tests check the spelling of all 24 scales and that every scale group has a filter button.
+Needs Node 18 or newer and nothing else. The tests cover the spelling of all 24 scales (and harmonic minor, melodic minor and Dorian as examples of new types), the keyboard layout, the shuffled rounds, and that the filter buttons and scale groups match.
 
 ## Files
 
 | File | Purpose |
 | --- | --- |
 | `index.html` | Page structure, including the engraved sharp and flat glyphs |
-| `styles.css` | Layout and light/dark themes |
-| `scales.js` | The list of scales and the music theory that spells them |
-| `script.js` | Dealing scales, the controls, keyboard and swipe input, theme switching |
+| `styles.css` | Layout, the keyboard diagram, and light/dark themes |
+| `scales.js` | The list of scales, how they're spelled, where they sit on the keyboard, and the order they're dealt in |
+| `script.js` | Drawing the scale and keyboard, the controls, keyboard and swipe input, theme switching |
 | `manifest.webmanifest`, `icons/` | Browser tab and home screen icons |
 | `tests/` | Unit tests for `scales.js` |
 

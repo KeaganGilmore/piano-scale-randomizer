@@ -9,6 +9,7 @@
   <meta name="theme-color" content="#f5f5f2" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
   <meta name="apple-mobile-web-app-title" content="Scales">
+  <link rel="icon" href="icons/favicon-32.png" type="image/png" sizes="32x32">
   <link rel="icon" href="icons/favicon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <link rel="manifest" href="manifest.webmanifest">
@@ -71,6 +72,8 @@
         <noscript><span class="noscript">Turn on JavaScript to get a random scale.</span></noscript>
       </h2>
       <ol class="notes" id="notes" aria-label="Notes"></ol>
+      <!-- The scale on the piano, for beginners. Hidden from screen readers: the notes list says the same. -->
+      <div class="keyboard" id="keyboard" aria-hidden="true"></div>
     </div>
 
     <div class="controls">
