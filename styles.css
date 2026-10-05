@@ -1,0 +1,433 @@
+/* ==========================================================================
+   Piano Scale Randomizer
+   Key white and lacquer black, with the red of the felt behind piano keys
+   as the one accent, used only to mark state (active filter, focus).
+   ========================================================================== */
+
+:root {
+  color-scheme: light;
+  --paper: #f5f5f2;
+  --ink: #151515;
+  --muted: #66665f;
+  --felt: #b3202f;
+  --key: #1a1a1a;
+  --key-hover: #2e2e2e;
+  --key-edge: #000;
+  --key-ink: #f5f5f2;
+  --key-shine: rgba(255, 255, 255, 0.1);
+  --kbd-edge: #cfcfc8;
+
+  --font: -apple-system, BlinkMacSystemFont, "Segoe UI Variable Display", "Segoe UI", Roboto, "Noto Sans",
+    "Helvetica Neue", Arial, sans-serif;
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --gutter: 1rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --paper: #000;
+    --ink: #ededE8;
+    --muted: #8f8f89;
+    --felt: #f0646b;
+    --key: #2a2a2a;
+    --key-hover: #353535;
+    --key-edge: #171717;
+    --key-ink: #ededE8;
+    --key-shine: rgba(255, 255, 255, 0.08);
+    --kbd-edge: #3a3a38;
+  }
+}
+
+/* Same values as above, for when the theme is chosen manually. */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --paper: #000;
+  --ink: #ededE8;
+  --muted: #8f8f89;
+  --felt: #f0646b;
+  --key: #2a2a2a;
+  --key-hover: #353535;
+  --key-edge: #171717;
+  --key-ink: #ededE8;
+  --key-shine: rgba(255, 255, 255, 0.08);
+  --kbd-edge: #3a3a38;
+}
+
+/* ---------- Base ---------- */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  background: var(--paper);
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: 100svh;
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font);
+  font-size: 1rem;
+  line-height: 1.4;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+button {
+  -webkit-appearance: none;
+  appearance: none;
+  font: inherit;
+  cursor: pointer;
+}
+
+:focus-visible {
+  outline: 3px solid var(--felt);
+  outline-offset: 3px;
+}
+
+.visually-hidden {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.glyphs {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+}
+
+/* ---------- Toolbar: scale filter and theme ---------- */
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 64rem;
+  margin: 0 auto;
+  padding: max(0.5rem, env(safe-area-inset-top)) max(var(--gutter), env(safe-area-inset-right)) 0
+    max(var(--gutter), env(safe-area-inset-left));
+}
+
+.filter {
+  min-width: 0;
+  margin: 0 0 0 -0.75rem; /* line the first label up with the page edge */
+  padding: 0;
+  border: 0;
+}
+
+.filter-options {
+  display: flex;
+}
+
+.filter-option {
+  position: relative;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 0.75rem;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.filter-option[aria-pressed="true"] {
+  color: var(--ink);
+}
+
+.filter-option[aria-pressed="true"]::after {
+  content: "";
+  position: absolute;
+  right: 0.75rem;
+  bottom: 0.375rem;
+  left: 0.75rem;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--felt);
+}
+
+.theme-toggle {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  margin-right: -11px; /* line the icon up with the page edge */
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: var(--muted);
+}
+
+.theme-toggle svg {
+  width: 22px;
+  height: 22px;
+}
+
+@media (hover: hover) {
+  .filter-option:hover,
+  .theme-toggle:hover {
+    color: var(--ink);
+  }
+}
+
+/* ---------- The scale ---------- */
+
+.practice {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  width: 100%;
+  max-width: 64rem;
+  margin: 0 auto;
+  padding: 0 max(var(--gutter), env(safe-area-inset-right)) max(1rem, env(safe-area-inset-bottom))
+    max(var(--gutter), env(safe-area-inset-left));
+}
+
+.scale {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem 0 2.5rem; /* sit a little above center, where the eye expects it */
+  text-align: center;
+  /* Leave horizontal swipes to the page (swipe left for the next scale); keep scrolling and zoom. */
+  touch-action: pan-y pinch-zoom;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.scale-name {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: inherit;
+}
+
+.tonic {
+  display: block;
+  font-size: clamp(6rem, min(44vw, 27vh), 14rem);
+  font-size: clamp(6rem, min(44vw, 27svh), 14rem);
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+
+.quality {
+  display: block;
+  margin-top: 0.35em;
+  font-size: clamp(1.5rem, min(7.5vw, 5vh), 2.5rem);
+  font-size: clamp(1.5rem, min(7.5vw, 5svh), 2.5rem);
+  font-weight: 400;
+  line-height: 1.1;
+}
+
+/* Two rows of four on phones: the scale's lower and upper halves (its two tetrachords). */
+.notes {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.3em 0;
+  width: min(100%, 9em);
+  margin: clamp(1.75rem, 6vh, 3.5rem) 0 0;
+  margin: clamp(1.75rem, 6svh, 3.5rem) 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: clamp(2rem, 11.5vw, 3rem);
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.noscript {
+  display: block;
+  color: var(--muted);
+  font-size: 1.25rem;
+}
+
+/* Accidentals sit beside the letter the way they do in printed chord symbols. */
+.accidental {
+  display: inline-block;
+  width: calc(0.84em * 0.38);
+  height: 0.84em;
+  margin-left: 0.04em;
+  vertical-align: -0.02em;
+  fill: currentColor;
+  overflow: visible;
+}
+
+.accidental--sharp {
+  width: calc(0.86em * 0.4);
+  height: 0.86em;
+  vertical-align: -0.11em;
+}
+
+.accidental--double-flat {
+  width: calc(0.84em * 0.64);
+}
+
+.accidental--double-sharp {
+  width: 0.4em;
+  height: 0.4em;
+  vertical-align: 0.13em;
+}
+
+/* ---------- Next scale: a key that travels when pressed ---------- */
+
+.controls {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.next {
+  width: 100%;
+  max-width: 28rem;
+  min-height: 4rem;
+  margin-bottom: 5px; /* room for the key's front edge */
+  padding: 0 1.5rem;
+  border: 0;
+  border-radius: 14px;
+  background: var(--key);
+  box-shadow: inset 0 1px 0 var(--key-shine), 0 5px 0 var(--key-edge);
+  color: var(--key-ink);
+  font-size: 1.125rem;
+  font-weight: 600;
+  touch-action: manipulation;
+  -webkit-user-select: none;
+  user-select: none;
+  transition: transform 90ms var(--ease-out), box-shadow 90ms var(--ease-out), background-color 150ms;
+}
+
+.next:active {
+  transform: translateY(4px);
+  box-shadow: inset 0 1px 0 var(--key-shine), 0 1px 0 var(--key-edge);
+}
+
+.next:focus-visible {
+  outline-offset: 5px;
+}
+
+@media (hover: hover) {
+  .next:hover {
+    background: var(--key-hover);
+  }
+}
+
+.hint {
+  display: none;
+  margin: 1.25rem 0 0;
+  color: var(--muted);
+  font-size: 0.9375rem;
+}
+
+kbd {
+  display: inline-block;
+  min-width: 1.9em;
+  padding: 0.05em 0.45em;
+  border: 1px solid var(--kbd-edge);
+  border-bottom-width: 2px;
+  border-radius: 6px;
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.875em;
+  line-height: 1.4;
+  text-align: center;
+}
+
+/* Keyboard shortcuts only mean something where there's a keyboard and mouse. */
+@media (hover: hover) and (pointer: fine) {
+  .hint {
+    display: block;
+  }
+}
+
+/* ---------- Larger screens ---------- */
+
+@media (min-width: 40rem) {
+  .notes {
+    grid-template-columns: repeat(8, minmax(0, 1fr));
+    width: min(100%, 14.5em);
+    font-size: clamp(2rem, min(5.5vw, 7vh), 3.25rem);
+    font-size: clamp(2rem, min(5.5vw, 7svh), 3.25rem);
+  }
+}
+
+@media (min-width: 48rem) {
+  :root {
+    --gutter: 2rem;
+  }
+
+  .next {
+    max-width: 20rem;
+  }
+}
+
+/* Phones held sideways: one row of notes and sizes set by height, so everything fits without scrolling. */
+@media (orientation: landscape) and (max-height: 30rem) {
+  .scale {
+    padding: 0.25rem 0 0.75rem;
+  }
+
+  .tonic {
+    font-size: clamp(4rem, 26vh, 14rem);
+    font-size: clamp(4rem, 26svh, 14rem);
+  }
+
+  .notes {
+    grid-template-columns: repeat(8, minmax(0, 1fr));
+    width: min(100%, 14.5em);
+    margin-top: 1rem;
+    font-size: clamp(1.5rem, 9vh, 2.25rem);
+    font-size: clamp(1.5rem, 9svh, 2.25rem);
+  }
+
+  .next {
+    min-height: 3.25rem;
+  }
+}
+
+/* ---------- Preferences ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .next {
+    transition: none;
+  }
+
+  .next:active {
+    transform: none;
+    background: var(--key-hover);
+    box-shadow: inset 0 1px 0 var(--key-shine), 0 5px 0 var(--key-edge);
+  }
+}
+
+@media (forced-colors: active) {
+  .next {
+    border: 2px solid ButtonText;
+  }
+
+  .filter-option[aria-pressed="true"]::after {
+    background: Highlight;
+    forced-color-adjust: none;
+  }
+}
