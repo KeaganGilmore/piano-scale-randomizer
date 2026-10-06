@@ -1,20 +1,21 @@
 # Piano Scale Randomizer
 
-A random piano scale to practice, readable from the music stand. Open it on your phone, play the scale on screen, tap for the next one.
+A random piano scale or chord to practice, readable from the music stand. Open it on your phone, play what's on screen, tap for the next one.
 
 **Live:** https://keagangilmore.github.io/piano-scale-randomizer/ (once GitHub Pages is enabled, see below)
 
 ## Using it
 
-- **Next scale:** tap the button, swipe left across the scale, or press <kbd>Space</kbd> or <kbd>→</kbd>.
-- **Filter:** All, Major or Minor, at the top left. Tapping the active filter also deals the next scale.
+- **Scales or chords:** the switch at the top left. Chords mode deals major and minor triads on all 12 roots.
+- **Next:** tap the button, swipe left across the scale or chord, or press <kbd>Space</kbd> or <kbd>→</kbd>.
+- **Filter:** All, Major or Minor, for scales and chords alike. Tapping the active filter also deals the next scale.
 - **Keyboard diagram:** a drawing of the piano with a red marker, labelled with the note, on each key of the scale, so beginners can see exactly which keys to play.
-- **Sheet music:** the scale is also written on a treble staff, beside the keyboard on wide screens and below it on phones. Very short phone screens leave it out to keep everything on one screen.
-- Scales come in shuffled rounds: every scale in the filter appears once before any repeats, and the same scale never appears twice in a row.
+- **Sheet music:** the scale (or stacked chord) is also written on a treble staff, beside the keyboard on wide screens and below it on phones. Very short phone screens leave it out to keep everything on one screen.
+- Scales and chords come in shuffled rounds: everything in the filter appears once before anything repeats, and nothing appears twice in a row.
 - Light and dark mode follow your device. The button at the top right overrides that, and the choice is remembered on that device.
 - On a phone, **Add to Home Screen** opens it like an app, without the browser's address bar.
 
-Every scale is spelled in its usual key, with each letter used once: D♭ major rather than C♯ major, G♯ minor rather than A♭ minor. F♯/G♭ major and D♯/E♭ minor are equally common keys, so either spelling can come up.
+Every scale and chord is spelled in its usual key, with each letter used once: D♭ major rather than C♯ major, G♯ minor rather than A♭ minor. F♯/G♭ major and D♯/E♭ minor are equally common keys, so either spelling can come up.
 
 ## Run it locally
 
@@ -40,13 +41,21 @@ Add one line to `SCALE_TYPES` in [`scales.js`](scales.js):
   { name: 'Harmonic Minor', group: 'minor', degrees: '1 2 b3 4 5 b6 7', keySignature: '1 2 b3 4 5 b6 b7' },
   ```
 
+## Add a chord type
+
+Chords work the same way, in `CHORD_TYPES` in [`scales.js`](scales.js). Give the chord's scale as its `keySignature` so the root gets the conventional name:
+
+```js
+{ name: 'Dominant 7th', group: 'major', degrees: '1 3 5 b7', keySignature: '1 2 3 4 5 6 7' },
+```
+
 ## Tests
 
 ```sh
 node --test
 ```
 
-Needs Node 18 or newer and nothing else. The tests cover the spelling of all 24 scales (and harmonic minor, melodic minor and Dorian as examples of new types), the keyboard layout, staff positions, the shuffled rounds, and that the filter buttons and scale groups match.
+Needs Node 18 or newer and nothing else. The tests cover the spelling of all 24 scales and 24 chords (and harmonic minor, melodic minor and Dorian as examples of new types), the keyboard layout, staff positions, the shuffled rounds, and that the filter buttons and scale groups match.
 
 ## Files
 
@@ -54,8 +63,8 @@ Needs Node 18 or newer and nothing else. The tests cover the spelling of all 24 
 | --- | --- |
 | `index.html` | Page structure, including the engraved sharp and flat glyphs and the treble clef and whole note from the [Bravura](https://github.com/steinbergmedia/bravura) music font (SIL Open Font License) |
 | `styles.css` | Layout, the keyboard and staff, and light/dark themes |
-| `scales.js` | The list of scales, how they're spelled, where they sit on the keyboard, and the order they're dealt in |
-| `script.js` | Drawing the scale, keyboard and staff, the controls, keyboard and swipe input, theme switching |
+| `scales.js` | The lists of scales and chords, how they're spelled, where they sit on the keyboard, and the order they're dealt in |
+| `script.js` | Drawing the scale or chord, keyboard and staff, scales/chords mode, the controls, keyboard and swipe input, theme switching |
 | `manifest.webmanifest`, `icons/` | Browser tab and home screen icons |
 | `tests/` | Unit tests for `scales.js` |
 

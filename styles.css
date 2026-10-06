@@ -17,6 +17,8 @@
   --key-ink: #f5f5f2;
   --key-shine: rgba(255, 255, 255, 0.1);
   --kbd-edge: #cfcfc8;
+  --track: #e6e6e0;
+  --track-thumb: #fff;
   --staff-line: #8c8c85;
   --kb-rail: #1b1a19;
   --kb-gap: #b4b1a8;
@@ -53,6 +55,8 @@
     --key-ink: #edede8;
     --key-shine: rgba(255, 255, 255, 0.08);
     --kbd-edge: #3a3a38;
+    --track: #1c1c1c;
+    --track-thumb: #3a3a3a;
     --staff-line: #77776f;
     --kb-rail: #2a2927;
     --kb-gap: #5f5e59;
@@ -85,6 +89,8 @@
   --key-ink: #edede8;
   --key-shine: rgba(255, 255, 255, 0.08);
   --kbd-edge: #3a3a38;
+  --track: #1c1c1c;
+  --track-thumb: #3a3a3a;
   --staff-line: #77776f;
   --kb-rail: #2a2927;
   --kb-gap: #5f5e59;
@@ -168,18 +174,54 @@ button {
 
 /* ---------- Toolbar: scale filter and theme ---------- */
 
+/* Phones: practice mode and theme on top, the major/minor filter below. Wider screens: one row. */
 .toolbar {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-areas:
+    "mode theme"
+    "filter filter";
   align-items: center;
-  justify-content: space-between;
   width: 100%;
   max-width: 64rem;
   margin: 0 auto;
-  padding: max(0.5rem, env(safe-area-inset-top)) max(var(--gutter), env(safe-area-inset-right)) 0
+  padding: max(0.25rem, env(safe-area-inset-top)) max(var(--gutter), env(safe-area-inset-right)) 0
     max(var(--gutter), env(safe-area-inset-left));
 }
 
+.mode {
+  grid-area: mode;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+/* A two-way switch: the chosen option sits on a raised thumb inside the track. */
+.mode-options {
+  display: inline-flex;
+  border-radius: 999px;
+  background: var(--track);
+}
+
+.mode-option {
+  min-height: 44px;
+  padding: 0 1.05rem;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.mode-option[aria-pressed="true"] {
+  background: var(--track-thumb);
+  box-shadow: inset 0 0 0 3px var(--track), 0 1px 2px rgba(0, 0, 0, 0.12);
+  color: var(--ink);
+}
+
 .filter {
+  grid-area: filter;
   min-width: 0;
   margin: 0 0 0 -0.75rem; /* line the first label up with the page edge */
   padding: 0;
@@ -218,6 +260,7 @@ button {
 }
 
 .theme-toggle {
+  grid-area: theme;
   display: grid;
   place-items: center;
   width: 44px;
@@ -237,6 +280,7 @@ button {
 
 @media (hover: hover) {
   .filter-option:hover,
+  .mode-option:hover,
   .theme-toggle:hover {
     color: var(--ink);
   }
@@ -283,8 +327,8 @@ button {
 
 .tonic {
   display: block;
-  font-size: clamp(4.5rem, min(38vw, 17vh), 14rem);
-  font-size: clamp(4.5rem, min(38vw, 17svh), 14rem);
+  font-size: clamp(4.5rem, min(38vw, 14.5vh), 14rem);
+  font-size: clamp(4.5rem, min(38vw, 14.5svh), 14rem);
   font-weight: 600;
   line-height: 1;
   letter-spacing: -0.03em;
@@ -305,12 +349,12 @@ button {
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 0.3em 0;
   width: min(100%, 9em);
-  margin: clamp(1rem, 3vh, 3rem) 0 0;
-  margin: clamp(1rem, 3svh, 3rem) 0 0;
+  margin: clamp(0.75rem, 2.5vh, 3rem) 0 0;
+  margin: clamp(0.75rem, 2.5svh, 3rem) 0 0;
   padding: 0;
   list-style: none;
-  font-size: clamp(1.75rem, min(11.5vw, 6.5vh), 3rem);
-  font-size: clamp(1.75rem, min(11.5vw, 6.5svh), 3rem);
+  font-size: clamp(1.75rem, min(11.5vw, 5.5vh), 3rem);
+  font-size: clamp(1.75rem, min(11.5vw, 5.5svh), 3rem);
   font-weight: 600;
   line-height: 1.2;
 }
@@ -319,6 +363,12 @@ button {
   display: block;
   color: var(--muted);
   font-size: 1.25rem;
+}
+
+/* A chord's three notes always fit on one row. */
+.notes.notes--chord {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  width: min(100%, 7em);
 }
 
 /* Accidentals sit beside the letter the way they do in printed chord symbols. */
@@ -357,8 +407,8 @@ button {
   gap: clamp(0.5rem, 1.2vh, 1.5rem);
   gap: clamp(0.5rem, 1.2svh, 1.5rem);
   width: 100%;
-  margin-top: clamp(1rem, 3.5vh, 2.5rem);
-  margin-top: clamp(1rem, 3.5svh, 2.5rem);
+  margin-top: clamp(0.75rem, 2.5vh, 2.5rem);
+  margin-top: clamp(0.75rem, 2.5svh, 2.5rem);
 }
 
 /* The staff is the secondary view: smaller than the keyboard, in the same ink as the notes. */
@@ -366,8 +416,8 @@ button {
   display: block;
   width: auto;
   max-width: 100%;
-  height: min(5rem, 8.5vh);
-  height: min(5rem, 8.5svh);
+  height: min(5rem, 8vh);
+  height: min(5rem, 8svh);
   overflow: visible;
   color: var(--ink);
   fill: currentColor;
@@ -549,6 +599,12 @@ kbd {
     --gutter: 2rem;
   }
 
+  .toolbar {
+    grid-template-columns: auto 1fr auto;
+    grid-template-areas: "mode filter theme";
+    column-gap: 1.75rem;
+  }
+
   .tonic {
     font-size: clamp(4.5rem, min(40vw, 22vh), 14rem);
     font-size: clamp(4.5rem, min(40vw, 22svh), 14rem);
@@ -602,14 +658,14 @@ kbd {
   }
 
   .tonic {
-    font-size: clamp(3.5rem, 18vh, 14rem);
-    font-size: clamp(3.5rem, 18svh, 14rem);
+    font-size: clamp(3.5rem, 15vh, 14rem);
+    font-size: clamp(3.5rem, 15svh, 14rem);
   }
 
   .notes {
-    margin-top: 0.75rem;
-    font-size: clamp(1.5rem, 6vh, 3rem);
-    font-size: clamp(1.5rem, 6svh, 3rem);
+    margin-top: 0.5rem;
+    font-size: clamp(1.5rem, 5vh, 3rem);
+    font-size: clamp(1.5rem, 5svh, 3rem);
   }
 
   .diagrams {
@@ -617,12 +673,12 @@ kbd {
   }
 
   .keyboard {
-    --white-key: min(2.75rem, calc((100vw - 2 * var(--gutter)) / 11), 4.6vh);
+    --white-key: min(2.75rem, calc((100vw - 2 * var(--gutter)) / 11), 4vh);
   }
 
   @supports (height: 1svh) {
     .keyboard {
-      --white-key: min(2.75rem, calc((100vw - 2 * var(--gutter)) / 11), 4.6svh);
+      --white-key: min(2.75rem, calc((100vw - 2 * var(--gutter)) / 11), 4svh);
     }
   }
 
@@ -638,6 +694,12 @@ kbd {
 
 /* Phones held sideways: the scale's name on the left, its notes and keys on the right. */
 @media (orientation: landscape) and (max-height: 30rem) {
+  .toolbar {
+    grid-template-columns: auto 1fr auto;
+    grid-template-areas: "mode filter theme";
+    column-gap: 1.25rem;
+  }
+
   .scale {
     display: grid;
     grid-template-areas:

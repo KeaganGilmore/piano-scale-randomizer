@@ -10,9 +10,11 @@ const vm = require('node:vm');
 // scales.js is a plain browser script, so run it in a sandbox and read back its globals.
 const context = vm.createContext({ Math });
 vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'scales.js'), 'utf8'), context);
-const { SCALE_TYPES, buildScale, spellScale, parseDegrees, describeNote, keyboardFor, staffPosition, scalesIn, createDealer } =
-  vm.runInContext(
-    '({ SCALE_TYPES, buildScale, spellScale, parseDegrees, describeNote, keyboardFor, staffPosition, scalesIn, createDealer })',
+const {
+  SCALE_TYPES, CHORD_TYPES, buildScale, buildChord, spellScale, parseDegrees, describeNote,
+  keyboardFor, staffPosition, scalesIn, chordsIn, createDealer,
+} = vm.runInContext(
+    '({ SCALE_TYPES, CHORD_TYPES, buildScale, buildChord, spellScale, parseDegrees, describeNote, keyboardFor, staffPosition, scalesIn, chordsIn, createDealer })',
     context,
   );
 
@@ -173,6 +175,50 @@ test('notes are described in words for screen readers', () => {
   assert.equal(describeNote({ letter: 'B', accidental: -2 }), 'B double flat');
 });
 
+/* ---------- Chords ---------- */
+
+const majorChord = CHORD_TYPES.find((type) => type.name === 'Major Chord');
+const minorChord = CHORD_TYPES.find((type) => type.name === 'Minor Chord');
+
+const MAJOR_CHORDS = [
+  ['C E G'], ['Db F Ab'], ['D F# A'], ['Eb G Bb'], ['E G# B'], ['F A C'],
+  ['F# A# C#', 'Gb Bb Db'], ['G B D'], ['Ab C Eb'], ['A C# E'], ['Bb D F'], ['B D# F#'],
+];
+
+const MINOR_CHORDS = [
+  ['C Eb G'], ['C# E G#'], ['D F A'], ['D# F# A#', 'Eb Gb Bb'], ['E G B'], ['F Ab C'],
+  ['F# A C#'], ['G Bb D'], ['G# B D#'], ['A C E'], ['Bb Db F'], ['B D F#'],
+];
+
+/** Every spelling buildChord can produce for a pitch class, sorted for comparison. */
+function chordSpellingsFor(type, pitchClass) {
+  const options = new Set([pickFirst, pickLast].map((random) => spelled(buildChord(type, pitchClass, random).notes)));
+  return [...options].sort();
+}
+
+test('major and minor chords are spelled in their conventional key for all 12 roots', () => {
+  MAJOR_CHORDS.forEach((expected, pitchClass) => {
+    assert.deepEqual(chordSpellingsFor(majorChord, pitchClass), [...expected].sort(), `major chord on ${pitchClass}`);
+  });
+  MINOR_CHORDS.forEach((expected, pitchClass) => {
+    assert.deepEqual(chordSpellingsFor(minorChord, pitchClass), [...expected].sort(), `minor chord on ${pitchClass}`);
+  });
+});
+
+test('a chord lists each note once, rising from its root, and lights only those keys', () => {
+  for (const type of CHORD_TYPES) {
+    for (let pitchClass = 0; pitchClass < 12; pitchClass++) {
+      const chord = buildChord(type, pitchClass, pickFirst);
+      assert.equal(chord.notes.length, 3, `${type.name} on ${pitchClass}`);
+      assert.equal(noteName(chord.tonic), noteName(chord.notes[0]));
+      assert.ok(chord.notes.every((note, i) => i === 0 || note.pitch > chord.notes[i - 1].pitch));
+      const { whiteKeys, blackKeys } = keyboardFor(chord.notes);
+      const lit = [...whiteKeys, ...blackKeys].filter((key) => key.note).map((key) => key.pitch);
+      assert.equal(lit.sort((a, b) => a - b).join(' '), pitches(chord.notes));
+    }
+  }
+});
+
 /* ---------- Keyboard ---------- */
 
 test('the keyboard shows the scale with one white key to spare on each side', () => {
@@ -224,7 +270,11 @@ test('filters hold the 12 roots of each scale type in their group', () => {
     const scales = scalesIn(group);
     assert.equal(scales.length, 12, group);
     assert.ok(scales.every((scale) => scale.type.group === group), group);
+    const chords = chordsIn(group);
+    assert.equal(chords.length, 12, `${group} chords`);
+    assert.ok(chords.every((chord) => CHORD_TYPES.includes(chord.type) && chord.type.group === group), group);
   }
+  assert.equal(chordsIn('all').length, CHORD_TYPES.length * 12);
 });
 
 test('scales are dealt in rounds: each one once before any repeats', () => {
@@ -260,10 +310,17 @@ test('filter buttons in index.html and scale groups match up both ways', () => {
   const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
   const filters = [...html.matchAll(/data-filter="([^"]+)"/g)].map((match) => match[1]);
   assert.ok(filters.includes('all'), 'missing the "all" filter');
-  for (const type of SCALE_TYPES) {
+  for (const type of [...SCALE_TYPES, ...CHORD_TYPES]) {
     assert.ok(filters.includes(type.group), `no filter button for group "${type.group}" (${type.name})`);
   }
   for (const filter of filters) {
     assert.ok(scalesIn(filter).length > 0, `the "${filter}" button has no scales to deal`);
+    assert.ok(chordsIn(filter).length > 0, `the "${filter}" button has no chords to deal`);
   }
+});
+
+test('index.html has a button for each practice mode', () => {
+  const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+  const modes = [...html.matchAll(/data-mode="([^"]+)"/g)].map((match) => match[1]).sort();
+  assert.deepEqual(modes, ['chords', 'scales']);
 });

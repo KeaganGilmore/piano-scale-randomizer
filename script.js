@@ -27,15 +27,24 @@
   const nextButton = document.getElementById('next');
   const themeButton = document.getElementById('theme-toggle');
   const filterButtons = Array.from(document.querySelectorAll('[data-filter]'));
+  const modeButtons = Array.from(document.querySelectorAll('[data-mode]'));
+  const hintNoun = document.getElementById('hint-noun');
   const themeColorMetas = Array.from(document.querySelectorAll('meta[name="theme-color"]'));
   const defaultThemeColors = themeColorMetas.map((meta) => meta.content);
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
   const systemDark = window.matchMedia('(prefers-color-scheme: dark)');
   const viewport = window.visualViewport;
 
+  // What's being practiced: scales or chords, each with the same build/deal functions from scales.js.
+  const MODES = {
+    scales: { noun: 'scale', build: buildScale, entries: scalesIn },
+    chords: { noun: 'chord', build: buildChord, entries: chordsIn },
+  };
+
+  let mode = 'scales';
   let filter = 'all';
   let deal = createDealer(scalesIn(filter));
-  let current = null; // { type, pitchClass } of the scale on screen
+  let current = null; // { type, pitchClass } of the scale or chord on screen
   let announcementTimer = 0;
 
   /* ---------- Rendering ---------- */
@@ -202,10 +211,11 @@
   }
 
   /**
-   * Writes the scale on a treble staff in whole notes. Units are staff spaces: the five
-   * lines sit at y = 0…4, and each step up the staff (line to space) is half a space.
+   * Writes the notes on a treble staff in whole notes: one after another for a scale, or
+   * stacked for a chord. Units are staff spaces: the five lines sit at y = 0…4, and each
+   * step up the staff (line to space) is half a space.
    */
-  function renderStaff(notes) {
+  function renderStaff(notes, stacked) {
     const GLYPH_SCALE = 'scale(0.004 -0.004)'; // Bravura font units (250 per space, y up) to staff spaces
     const ACCIDENTALS = {
       '-2': { glyph: 'double-flat', width: 1.54, height: 2.4, center: 0.735 },
@@ -216,10 +226,39 @@
     const NOTE_WIDTH = 1.69;
     const FIRST_NOTE = 4.4;
     const SLOT = 3.7;
+    const ACCIDENTAL_COLUMN = 1.35;
     const top = -2.2;
-    const width = FIRST_NOTE + notes.length * SLOT + 1;
     const height = 8.4;
     const lineY = (position) => 5 - position / 2; // middle C (0) sits one ledger line below the staff
+
+    // Where each note's head goes, and where its accidental's right edge goes.
+    let layout;
+    let width;
+    if (stacked) {
+      // Accidentals that would overlap step left into further columns, working down from the top note.
+      const columns = [];
+      const columnOf = new Map();
+      const topFirst = notes.map((_, index) => index).sort((a, b) => staffPosition(notes[b]) - staffPosition(notes[a]));
+      for (const index of topFirst) {
+        const accidental = ACCIDENTALS[notes[index].accidental];
+        if (!accidental) continue;
+        const y = lineY(staffPosition(notes[index]));
+        const span = [y - accidental.height * accidental.center, y + accidental.height * (1 - accidental.center)];
+        let column = columns.findIndex((spans) => spans.every(([above, below]) => span[1] + 0.1 < above || span[0] - 0.1 > below));
+        if (column === -1) column = columns.push([]) - 1;
+        columns[column].push(span);
+        columnOf.set(index, column);
+      }
+      const x = FIRST_NOTE + columns.length * ACCIDENTAL_COLUMN + 0.6;
+      layout = notes.map((_, index) => ({ x, accidentalRight: x - 0.25 - (columnOf.get(index) || 0) * ACCIDENTAL_COLUMN }));
+      width = x + NOTE_WIDTH + 2.4;
+    } else {
+      layout = notes.map((_, index) => {
+        const x = FIRST_NOTE + index * SLOT + 1.5;
+        return { x, accidentalRight: x - 0.25 };
+      });
+      width = FIRST_NOTE + notes.length * SLOT + 1;
+    }
 
     const parts = [];
     for (let line = 0; line < 5; line++) {
@@ -230,7 +269,7 @@
     notes.forEach((note, index) => {
       const position = staffPosition(note);
       const y = lineY(position);
-      const x = FIRST_NOTE + index * SLOT + 1.5;
+      const { x, accidentalRight } = layout[index];
       // Ledger lines for notes above or below the staff.
       for (let ledger = 0; ledger >= position; ledger -= 2) {
         parts.push(svgElement('line', { class: 'staff-line', x1: x - 0.4, x2: x + NOTE_WIDTH + 0.4, y1: lineY(ledger), y2: lineY(ledger) }));
@@ -242,7 +281,7 @@
       if (accidental) {
         parts.push(svgElement('use', {
           href: `#${accidental.glyph}`,
-          x: x - accidental.width - 0.25,
+          x: accidentalRight - accidental.width,
           y: y - accidental.height * accidental.center,
           width: accidental.width,
           height: accidental.height,
@@ -269,15 +308,18 @@
     }, ANNOUNCEMENT_LIFETIME);
   }
 
-  function render(scale) {
-    const name = `${describeNote(scale.tonic)} ${scale.type.name.toLowerCase()}`;
-    tonicEl.replaceChildren(drawnNote(scale.tonic));
-    qualityEl.textContent = scale.type.name;
+  /** Shows a scale or chord: { type, tonic, notes } from buildScale or buildChord. */
+  function render(item) {
+    const name = `${describeNote(item.tonic)} ${item.type.name.toLowerCase()}`;
+    const isChord = mode === 'chords';
+    tonicEl.replaceChildren(drawnNote(item.tonic));
+    qualityEl.textContent = item.type.name;
     spokenNameEl.textContent = name;
-    notesEl.replaceChildren(...scale.notes.map(noteItem));
-    renderKeyboard(scale.notes);
-    renderStaff(scale.notes);
-    announce(`${name}: ${scale.notes.map(describeNote).join(', ')}`);
+    notesEl.classList.toggle('notes--chord', isChord);
+    notesEl.replaceChildren(...item.notes.map(noteItem));
+    renderKeyboard(item.notes);
+    renderStaff(item.notes, isChord);
+    announce(`${name}: ${item.notes.map(describeNote).join(', ')}`);
   }
 
   /** The new scale slides in from the right, the direction "next" points. */
@@ -295,17 +337,31 @@
 
   function showNextScale() {
     current = deal(current);
-    render(buildScale(current.type, current.pitchClass));
+    render(MODES[mode].build(current.type, current.pitchClass));
     playEntrance();
   }
 
   function setFilter(value) {
     if (value !== filter) {
       filter = value;
-      deal = createDealer(scalesIn(value)); // a fresh round from the new selection
+      deal = createDealer(MODES[mode].entries(value)); // a fresh round from the new selection
       for (const button of filterButtons) {
         button.setAttribute('aria-pressed', String(button.dataset.filter === value));
       }
+    }
+    showNextScale();
+  }
+
+  function setMode(value) {
+    if (value !== mode) {
+      mode = value;
+      deal = createDealer(MODES[value].entries(filter));
+      current = null;
+      for (const button of modeButtons) {
+        button.setAttribute('aria-pressed', String(button.dataset.mode === value));
+      }
+      nextButton.textContent = `Next ${MODES[value].noun}`;
+      hintNoun.textContent = MODES[value].noun;
     }
     showNextScale();
   }
@@ -381,9 +437,12 @@
   for (const button of filterButtons) {
     button.addEventListener('click', () => setFilter(button.dataset.filter));
   }
+  for (const button of modeButtons) {
+    button.addEventListener('click', () => setMode(button.dataset.mode));
+  }
   themeButton.addEventListener('click', toggleTheme);
-  // A mouse click shouldn't leave focus on the filter or theme buttons: Space and → would then
-  // draw a focus ring there (or toggle the theme) instead of just dealing the next scale.
+  // A mouse click shouldn't leave focus on the toolbar buttons: Space and → would then
+  // draw a focus ring there (or toggle the theme) instead of just dealing the next one.
   toolbar.addEventListener('mousedown', (event) => {
     if (event.target.closest('button')) event.preventDefault();
   });

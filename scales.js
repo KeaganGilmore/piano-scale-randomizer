@@ -1,6 +1,6 @@
 /*
- * The scales on offer, how to spell them, where they sit on the keyboard and the
- * order they're dealt in. No page code lives here, so it can all be tested on its
+ * The scales and chords on offer, how to spell them, where they sit on the keyboard
+ * and the staff, and the order they're dealt in. No page code lives here, so it can all be tested on its
  * own (tests/scales.test.js).
  */
 'use strict';
@@ -26,6 +26,19 @@ const MAJOR_STEPS = [0, 2, 4, 5, 7, 9, 11]; // semitones above the tonic for maj
 const SCALE_TYPES = [
   { name: 'Major', group: 'major', degrees: '1 2 3 4 5 6 7' },
   { name: 'Natural Minor', group: 'minor', degrees: '1 2 b3 4 5 b6 b7' },
+];
+
+/**
+ * Every chord the app can show, in the same format as the scales. A chord takes its
+ * root's name from its key (D♭ major, G♯ minor), so `keySignature` is its scale.
+ *
+ * More chords are one line each, for example:
+ *   { name: 'Dominant 7th', group: 'major', degrees: '1 3 5 b7', keySignature: '1 2 3 4 5 6 7' },
+ *   { name: 'Diminished Chord', group: 'minor', degrees: '1 b3 b5', keySignature: '1 2 b3 4 5 b6 b7' },
+ */
+const CHORD_TYPES = [
+  { name: 'Major Chord', group: 'major', degrees: '1 3 5', keySignature: '1 2 3 4 5 6 7' },
+  { name: 'Minor Chord', group: 'minor', degrees: '1 b3 5', keySignature: '1 2 b3 4 5 b6 b7' },
 ];
 
 const ACCIDENTAL_WORDS = { '-2': 'double flat', '-1': 'flat', 1: 'sharp', 2: 'double sharp' };
@@ -99,6 +112,17 @@ function countAccidentals(notes) {
  * both are proper keys, so `random` picks one.
  */
 function buildScale(type, pitchClass, random = Math.random) {
+  const notes = spellScale(chooseTonic(type, pitchClass, random), type.degrees);
+  return { type, tonic: notes[0], notes };
+}
+
+/** Builds a chord the same way, with each note once (no repeated octave), root first. */
+function buildChord(type, pitchClass, random = Math.random) {
+  const notes = spellScale(chooseTonic(type, pitchClass, random), type.degrees).slice(0, -1);
+  return { type, tonic: notes[0], notes };
+}
+
+function chooseTonic(type, pitchClass, random) {
   const key = type.keySignature || type.degrees;
   const candidates = namesForPitchClass(pitchClass).map((tonic) => ({
     tonic,
@@ -106,9 +130,7 @@ function buildScale(type, pitchClass, random = Math.random) {
   }));
   const fewest = Math.min(...candidates.map((candidate) => candidate.accidentals));
   const simplest = candidates.filter((candidate) => candidate.accidentals === fewest);
-  const { tonic } = simplest[Math.floor(random() * simplest.length)];
-  const notes = spellScale(tonic, type.degrees);
-  return { type, tonic: notes[0], notes };
+  return simplest[Math.floor(random() * simplest.length)].tonic;
 }
 
 /** Note names as they should be read aloud: "D flat", "F sharp", "E". */
@@ -169,14 +191,22 @@ function staffPosition(note) {
 
 /* ---------- Dealing ---------- */
 
-/** Every scale in a filter group ('all', 'major', 'minor'), as { type, pitchClass } for each of the 12 roots. */
-function scalesIn(group) {
-  const scales = [];
-  for (const type of SCALE_TYPES) {
+/** Every type in a filter group ('all', 'major', 'minor'), as { type, pitchClass } for each of the 12 roots. */
+function entriesIn(types, group) {
+  const entries = [];
+  for (const type of types) {
     if (group !== 'all' && type.group !== group) continue;
-    for (let pitchClass = 0; pitchClass < 12; pitchClass++) scales.push({ type, pitchClass });
+    for (let pitchClass = 0; pitchClass < 12; pitchClass++) entries.push({ type, pitchClass });
   }
-  return scales;
+  return entries;
+}
+
+function scalesIn(group) {
+  return entriesIn(SCALE_TYPES, group);
+}
+
+function chordsIn(group) {
+  return entriesIn(CHORD_TYPES, group);
 }
 
 function isSameScale(a, b) {
