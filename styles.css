@@ -18,23 +18,21 @@
   --key-shine: rgba(255, 255, 255, 0.1);
   --kbd-edge: #cfcfc8;
   --staff-line: #8c8c85;
-  --rail: #1a1a1a;
-  --ivory: #fff;
-  --ivory-shade: #ebeae4;
-  --ivory-lip: #d9d8d1;
-  --ebony-top: #3a3a3a;
-  --ebony: #121212;
-  --ebony-lip: #4a4a4a;
-  --key-line: #d0cfc8;
-  --keyboard-shadow: rgba(30, 20, 10, 0.18);
-  --lit-white: #f6d3d6;
-  --lit-white-shade: #e7a3aa;
-  --lit-white-lip: #d4848c;
-  --lit-white-ink: #6e0f1a;
-  --lit-black-top: #d23a48;
-  --lit-black: #9e1724;
-  --lit-black-lip: #e0606b;
-  --lit-black-ink: #fff;
+  --kb-rail: #1b1a19;
+  --kb-gap: #b4b1a8;
+  --kb-ivory-hi: #fff;
+  --kb-ivory-lo: #eeece5;
+  --kb-front-hi: #e2dfd6;
+  --kb-front-lo: #c3bfb3;
+  --kb-ebony-hi: #34322f;
+  --kb-ebony-lo: #0c0c0c;
+  --kb-slope-hi: #5b5955;
+  --kb-slope-lo: #1b1a19;
+  --kb-shade: rgba(0, 0, 0, 0.16);
+  --kb-cast: rgba(0, 0, 0, 0.45);
+  --kb-drop: rgba(40, 30, 20, 0.22);
+  --kb-dot-ring: #fff;
+  --kb-dot-ink: #fff;
 
   --font: -apple-system, BlinkMacSystemFont, "Segoe UI Variable Display", "Segoe UI", Roboto, "Noto Sans",
     "Helvetica Neue", Arial, sans-serif;
@@ -56,23 +54,21 @@
     --key-shine: rgba(255, 255, 255, 0.08);
     --kbd-edge: #3a3a38;
     --staff-line: #77776f;
-    --rail: #262626;
-    --ivory: #d6d6cf;
-    --ivory-shade: #b9b9b2;
-    --ivory-lip: #a2a29b;
-    --ebony-top: #2e2e2e;
-    --ebony: #0b0b0b;
-    --ebony-lip: #3c3c3c;
-    --key-line: #8d8d86;
-    --keyboard-shadow: rgba(0, 0, 0, 0.6);
-    --lit-white: #eba3a8;
-    --lit-white-shade: #d27a81;
-    --lit-white-lip: #b8626a;
-    --lit-white-ink: #3d070d;
-    --lit-black-top: #f58a8f;
-    --lit-black: #e0505a;
-    --lit-black-lip: #f9aeb1;
-    --lit-black-ink: #1a0306;
+    --kb-rail: #2a2927;
+    --kb-gap: #5f5e59;
+    --kb-ivory-hi: #dcdbd4;
+    --kb-ivory-lo: #c4c3bb;
+    --kb-front-hi: #a9a79f;
+    --kb-front-lo: #8a8880;
+    --kb-ebony-hi: #2b2a28;
+    --kb-ebony-lo: #050505;
+    --kb-slope-hi: #4a4845;
+    --kb-slope-lo: #141413;
+    --kb-shade: rgba(0, 0, 0, 0.3);
+    --kb-cast: rgba(0, 0, 0, 0.6);
+    --kb-drop: rgba(0, 0, 0, 0.7);
+    --kb-dot-ring: #111;
+    --kb-dot-ink: #1a0306;
   }
 }
 
@@ -90,23 +86,21 @@
   --key-shine: rgba(255, 255, 255, 0.08);
   --kbd-edge: #3a3a38;
   --staff-line: #77776f;
-  --rail: #262626;
-  --ivory: #d6d6cf;
-  --ivory-shade: #b9b9b2;
-  --ivory-lip: #a2a29b;
-  --ebony-top: #2e2e2e;
-  --ebony: #0b0b0b;
-  --ebony-lip: #3c3c3c;
-  --key-line: #8d8d86;
-  --keyboard-shadow: rgba(0, 0, 0, 0.6);
-  --lit-white: #eba3a8;
-  --lit-white-shade: #d27a81;
-  --lit-white-lip: #b8626a;
-  --lit-white-ink: #3d070d;
-  --lit-black-top: #f58a8f;
-  --lit-black: #e0505a;
-  --lit-black-lip: #f9aeb1;
-  --lit-black-ink: #1a0306;
+  --kb-rail: #2a2927;
+  --kb-gap: #5f5e59;
+  --kb-ivory-hi: #dcdbd4;
+  --kb-ivory-lo: #c4c3bb;
+  --kb-front-hi: #a9a79f;
+  --kb-front-lo: #8a8880;
+  --kb-ebony-hi: #2b2a28;
+  --kb-ebony-lo: #050505;
+  --kb-slope-hi: #4a4845;
+  --kb-slope-lo: #141413;
+  --kb-shade: rgba(0, 0, 0, 0.3);
+  --kb-cast: rgba(0, 0, 0, 0.6);
+  --kb-drop: rgba(0, 0, 0, 0.7);
+  --kb-dot-ring: #111;
+  --kb-dot-ink: #1a0306;
 }
 
 /* ---------- Base ---------- */
@@ -386,98 +380,54 @@ button {
 }
 
 
-/* Drawn like a real keyboard seen from above: a lacquer rail with the red felt strip
-   along the back, white keys with a front edge, and raised black keys that cast a shadow. */
+/* The keyboard itself is an SVG drawn by script.js; these rules size it and color its parts. */
+/* Sized by its white-key width; the drawing's height follows (about 2.6 key widths), so the
+   key width is also capped by screen height to keep everything on one screen. */
 .keyboard {
-  --white-key: min(2.75rem, calc((100vw - 2 * var(--gutter)) / 11));
-  position: relative;
-  display: flex;
+  --white-key: min(2.75rem, calc((100vw - 2 * var(--gutter)) / 11), 5vh);
   width: calc(var(--white-keys, 10) * var(--white-key));
   max-width: 100%;
-  height: min(calc(var(--white-key) * 2.6), 13vh);
-  height: min(calc(var(--white-key) * 2.6), 13svh);
-  overflow: hidden; /* crops the black keys that hang over either end */
-  border: 1px solid var(--key-line);
-  border-top: 6px solid var(--rail);
-  border-radius: 3px 3px 8px 8px;
-  background: var(--key-line); /* shows through the gaps between keys */
-  box-shadow: 0 10px 18px -10px var(--keyboard-shadow), 0 1px 2px var(--keyboard-shadow);
-  font-size: max(0.625rem, calc(var(--white-key) * 0.36));
-  font-weight: 600;
-  line-height: 1;
+  font-weight: 650;
 }
 
-/* The felt strip, lying over the back of the keys. */
-.keyboard::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  right: 0;
-  left: 0;
-  z-index: 2;
-  height: 2px;
-  background: var(--felt);
-  opacity: 0.85;
+@supports (height: 1svh) {
+  .keyboard {
+    --white-key: min(2.75rem, calc((100vw - 2 * var(--gutter)) / 11), 5svh);
+  }
 }
 
-.key {
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
+.keyboard svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  filter: drop-shadow(0 6px 7px var(--kb-drop));
 }
 
-.key--white {
-  flex: 1;
-  padding-bottom: 0.75em;
-  border-radius: 0 0 4px 4px;
-  /* A touch of shade under the rail, then ivory fading towards the front edge. */
-  background:
-    linear-gradient(180deg, rgba(0, 0, 0, 0.12), rgba(0, 0, 0, 0) 9%),
-    linear-gradient(180deg, var(--ivory) 0%, var(--ivory) 55%, var(--ivory-shade) 100%);
-  box-shadow: inset 0 -0.3em 0 var(--ivory-lip), inset 0 -0.36em 0 rgba(255, 255, 255, 0.5);
-  color: var(--ink);
+.kb-ivory-hi { stop-color: var(--kb-ivory-hi); }
+.kb-ivory-lo { stop-color: var(--kb-ivory-lo); }
+.kb-front-hi { stop-color: var(--kb-front-hi); }
+.kb-front-lo { stop-color: var(--kb-front-lo); }
+.kb-ebony-hi { stop-color: var(--kb-ebony-hi); }
+.kb-ebony-lo { stop-color: var(--kb-ebony-lo); }
+.kb-slope-hi { stop-color: var(--kb-slope-hi); }
+.kb-slope-lo { stop-color: var(--kb-slope-lo); }
+.kb-shade-hi { stop-color: var(--kb-shade); }
+.kb-shade-lo { stop-color: var(--kb-shade); stop-opacity: 0; }
+
+.kb-gap { fill: var(--kb-gap); }
+.kb-rail { fill: var(--kb-rail); }
+.kb-felt { fill: var(--felt); }
+.kb-shadow { fill: var(--kb-cast); }
+.kb-glint { fill: rgba(255, 255, 255, 0.18); }
+
+.kb-dot {
+  fill: var(--felt);
+  stroke: var(--kb-dot-ring);
+  stroke-width: 0.9;
 }
 
-.key--white + .key--white {
-  border-left: 1px solid var(--key-line);
-}
-
-.key--black {
-  position: absolute;
-  top: 0;
-  z-index: 1;
-  width: calc(100% / var(--white-keys, 10) * 0.58);
-  height: 60%;
-  padding-bottom: 0.6em;
-  border-radius: 0 0 3px 3px;
-  /* Raised key: lit from above, with a lighter bevel on its front face and a shadow on the keys below. */
-  background: linear-gradient(180deg, var(--ebony) 0%, var(--ebony-top) 82%, var(--ebony) 100%);
-  box-shadow:
-    inset 0 -0.32em 0 var(--ebony-lip),
-    inset 1px 0 0 rgba(255, 255, 255, 0.06),
-    inset -1px 0 0 rgba(0, 0, 0, 0.4),
-    1px 3px 4px rgba(0, 0, 0, 0.35);
-  color: #fff;
-  font-size: 0.85em;
-  transform: translateX(-50%);
-}
-
-.key--white.key--in-scale {
-  background:
-    linear-gradient(180deg, rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0) 9%),
-    linear-gradient(180deg, var(--lit-white) 0%, var(--lit-white-shade) 100%);
-  box-shadow: inset 0 -0.3em 0 var(--lit-white-lip), inset 0 -0.36em 0 rgba(255, 255, 255, 0.35);
-  color: var(--lit-white-ink);
-}
-
-.key--black.key--in-scale {
-  background: linear-gradient(180deg, var(--lit-black) 0%, var(--lit-black-top) 82%, var(--lit-black) 100%);
-  box-shadow:
-    inset 0 -0.32em 0 var(--lit-black-lip),
-    inset 1px 0 0 rgba(255, 255, 255, 0.15),
-    inset -1px 0 0 rgba(0, 0, 0, 0.25),
-    1px 3px 4px rgba(0, 0, 0, 0.35);
-  color: var(--lit-black-ink);
+.kb-label {
+  fill: var(--kb-dot-ink);
 }
 
 /* ---------- Next scale: a key that travels when pressed ---------- */
@@ -576,9 +526,13 @@ kbd {
   }
 
   .keyboard {
-    --white-key: var(--white-key-desktop);
-    height: min(calc(var(--white-key) * 2.6), 14vh);
-    height: min(calc(var(--white-key) * 2.6), 14svh);
+    --white-key: min(var(--white-key-desktop), 5.4vh);
+  }
+
+  @supports (height: 1svh) {
+    .keyboard {
+      --white-key: min(var(--white-key-desktop), 5.4svh);
+    }
   }
 
   .next {
@@ -596,6 +550,15 @@ kbd {
     flex-direction: row;
     justify-content: center;
     gap: 2.5rem;
+  }
+
+  /* Side by side, the keyboard keeps its size and the staff gives way if space runs short. */
+  .keyboard {
+    flex: none;
+  }
+
+  .staff {
+    min-width: 0;
   }
 }
 
@@ -616,13 +579,18 @@ kbd {
     font-size: clamp(1.5rem, 6svh, 3rem);
   }
 
-  .keyboard {
-    height: min(calc(var(--white-key) * 2.6), 12vh);
-    height: min(calc(var(--white-key) * 2.6), 12svh);
-  }
-
   .diagrams {
     margin-top: 0.75rem;
+  }
+
+  .keyboard {
+    --white-key: min(2.75rem, calc((100vw - 2 * var(--gutter)) / 11), 4.6vh);
+  }
+
+  @supports (height: 1svh) {
+    .keyboard {
+      --white-key: min(2.75rem, calc((100vw - 2 * var(--gutter)) / 11), 4.6svh);
+    }
   }
 
   /* Too short for the staff as well; the keyboard and note names carry the scale. */
@@ -677,7 +645,6 @@ kbd {
 
   .keyboard {
     --white-key: clamp(1.25rem, 8vh, 2.25rem);
-    height: calc(var(--white-key) * 2.6);
   }
 
   .staff {

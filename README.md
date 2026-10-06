@@ -8,7 +8,7 @@ A random piano scale to practice, readable from the music stand. Open it on your
 
 - **Next scale:** tap the button, swipe left across the scale, or press <kbd>Space</kbd> or <kbd>→</kbd>.
 - **Filter:** All, Major or Minor, at the top left. Tapping the active filter also deals the next scale.
-- **Keyboard diagram:** the scale's keys are lit on a picture of the piano and labelled with their notes, so beginners can see exactly which keys to play.
+- **Keyboard diagram:** a drawing of the piano with a red marker, labelled with the note, on each key of the scale, so beginners can see exactly which keys to play.
 - **Sheet music:** the scale is also written on a treble staff, beside the keyboard on wide screens and below it on phones. Very short phone screens leave it out to keep everything on one screen.
 - Scales come in shuffled rounds: every scale in the filter appears once before any repeats, and the same scale never appears twice in a row.
 - Light and dark mode follow your device. The button at the top right overrides that, and the choice is remembered on that device.

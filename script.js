@@ -71,30 +71,128 @@
     return item;
   }
 
-  function keyElement(color, key) {
-    const element = document.createElement('div');
-    element.className = key.note ? `key key--${color} key--in-scale` : `key key--${color}`;
-    if (key.note) {
-      const label = document.createElement('span');
-      label.className = 'key-label';
-      label.append(drawnNote(key.note));
-      element.append(label);
+  /*
+   * The keyboard is drawn as one SVG, in units where a white key is 24 wide. Proportions
+   * follow a real piano: black keys are about 0.58 of a white key wide and two-thirds as
+   * long, and they sit off-center within their groups of two and three, as on a real
+   * keyboard. Keys in the scale keep their real color and get a red marker with the note.
+   */
+  const KEY = {
+    width: 24,
+    gap: 1, // between white keys
+    rail: 6, // the lacquer rail and felt strip at the back
+    length: 52, // white key, rail to front edge
+    front: 5, // the white key's front face
+    blackWidth: 14,
+    blackLength: 33,
+    blackSlope: 5, // the black key's sloping front
+  };
+  // How far each black key sits off the line between its white keys, in white-key widths.
+  const BLACK_KEY_OFFSET = { 1: -0.1, 3: 0.1, 6: -0.14, 8: 0, 10: 0.14 };
+  // Rough advance widths (in em) of capital letters, for centering note names in the markers.
+  const LETTER_WIDTH = { A: 0.66, B: 0.64, C: 0.66, D: 0.7, E: 0.58, F: 0.55, G: 0.71 };
+  const MARKER_ACCIDENTALS = {
+    '-2': { glyph: 'double-flat', width: 0.54, height: 0.84, drop: 0.02 },
+    '-1': { glyph: 'flat', width: 0.32, height: 0.84, drop: 0.02 },
+    1: { glyph: 'sharp', width: 0.34, height: 0.86, drop: 0.11 },
+    2: { glyph: 'double-sharp', width: 0.4, height: 0.4, drop: -0.13 },
+  };
+
+  function gradient(id, stops) {
+    const element = svgElement('linearGradient', { id, x1: 0, y1: 0, x2: 0, y2: 1 });
+    for (const [offset, className] of stops) {
+      element.appendChild(svgElement('stop', { offset, class: className }));
     }
     return element;
   }
 
-  /** Draws the stretch of keyboard around the scale, with the scale's keys lit and named. */
+  /** A red marker with the note's name, centered on (cx, cy). */
+  function keyMarker(note, cx, cy, radius, fontSize) {
+    const group = svgElement('g', { class: 'kb-marker' });
+    group.appendChild(svgElement('circle', { class: 'kb-dot', cx, cy, r: radius }));
+    const accidental = MARKER_ACCIDENTALS[note.accidental];
+    const letterWidth = LETTER_WIDTH[note.letter] * fontSize;
+    const total = letterWidth + (accidental ? (0.04 + accidental.width) * fontSize : 0);
+    const left = cx - total / 2;
+    const baseline = cy + 0.35 * fontSize;
+    const label = svgElement('g', { class: 'kb-label' });
+    const text = svgElement('text', { x: left, y: baseline, 'font-size': fontSize });
+    text.textContent = note.letter;
+    label.appendChild(text);
+    if (accidental) {
+      label.appendChild(svgElement('use', {
+        href: `#${accidental.glyph}`,
+        'data-accidental': accidental.glyph,
+        x: left + letterWidth + 0.04 * fontSize,
+        y: baseline + (accidental.drop - accidental.height) * fontSize,
+        width: accidental.width * fontSize,
+        height: accidental.height * fontSize,
+      }));
+    }
+    group.appendChild(label);
+    return group;
+  }
+
+  /** Draws the stretch of keyboard around the scale, marking the scale's keys with their notes. */
   function renderKeyboard(notes) {
     const { whiteKeys, blackKeys } = keyboardFor(notes);
-    keyboardEl.style.setProperty('--white-keys', whiteKeys.length);
-    keyboardEl.replaceChildren(
-      ...whiteKeys.map((key) => keyElement('white', key)),
-      ...blackKeys.map((key) => {
-        const element = keyElement('black', key);
-        element.style.left = `${(key.x / whiteKeys.length) * 100}%`;
-        return element;
-      }),
+    const width = whiteKeys.length * KEY.width;
+    const height = KEY.rail + KEY.length + KEY.front;
+    const svg = svgElement('svg', { viewBox: `0 0 ${width} ${height}`, preserveAspectRatio: 'xMidYMid meet', focusable: 'false' });
+
+    const defs = svgElement('defs', {});
+    defs.append(
+      gradient('kb-ivory', [[0, 'kb-ivory-hi'], [0.7, 'kb-ivory-hi'], [1, 'kb-ivory-lo']]),
+      gradient('kb-ivory-front', [[0, 'kb-front-hi'], [1, 'kb-front-lo']]),
+      gradient('kb-ebony', [[0, 'kb-ebony-lo'], [0.85, 'kb-ebony-hi'], [1, 'kb-ebony-lo']]),
+      gradient('kb-ebony-slope', [[0, 'kb-slope-hi'], [1, 'kb-slope-lo']]),
+      gradient('kb-rail-shade', [[0, 'kb-shade-hi'], [1, 'kb-shade-lo']]),
     );
+    const blur = svgElement('filter', { id: 'kb-soft', x: '-50%', y: '-20%', width: '200%', height: '150%' });
+    blur.appendChild(svgElement('feGaussianBlur', { stdDeviation: 1.4 }));
+    defs.appendChild(blur);
+    svg.appendChild(defs);
+
+    // The gaps between keys show through behind them.
+    svg.appendChild(svgElement('rect', { class: 'kb-gap', x: 0, y: 0, width, height, rx: 3 }));
+
+    whiteKeys.forEach((key, index) => {
+      const x = index * KEY.width + KEY.gap / 2;
+      const keyWidth = KEY.width - KEY.gap;
+      svg.appendChild(svgElement('rect', { x, y: KEY.rail + KEY.length - 2, width: keyWidth, height: KEY.front + 2, rx: 2, fill: 'url(#kb-ivory-front)' }));
+      svg.appendChild(svgElement('rect', { x, y: KEY.rail, width: keyWidth, height: KEY.length, rx: 1, fill: 'url(#kb-ivory)' }));
+    });
+
+    // Shade under the rail, then the shadows the black keys cast forward onto the white keys.
+    svg.appendChild(svgElement('rect', { x: 0, y: KEY.rail, width, height: 8, fill: 'url(#kb-rail-shade)' }));
+    const shadows = svgElement('g', { class: 'kb-shadow', filter: 'url(#kb-soft)' });
+    const blackX = (key) => (key.x + BLACK_KEY_OFFSET[((key.pitch % 12) + 12) % 12]) * KEY.width - KEY.blackWidth / 2;
+    for (const key of blackKeys) {
+      shadows.appendChild(svgElement('rect', { x: blackX(key) + 1.2, y: KEY.rail, width: KEY.blackWidth, height: KEY.blackLength + 2.5, rx: 2 }));
+    }
+    svg.appendChild(shadows);
+
+    for (const key of blackKeys) {
+      const x = blackX(key);
+      const bottom = KEY.rail + KEY.blackLength;
+      svg.appendChild(svgElement('rect', { x, y: KEY.rail - 2, width: KEY.blackWidth, height: KEY.blackLength + 2, rx: 1.6, fill: 'url(#kb-ebony)' }));
+      svg.appendChild(svgElement('rect', { x: x + 0.9, y: bottom - KEY.blackSlope, width: KEY.blackWidth - 1.8, height: KEY.blackSlope - 0.8, rx: 1.1, fill: 'url(#kb-ebony-slope)' }));
+      svg.appendChild(svgElement('rect', { class: 'kb-glint', x: x + 1.2, y: bottom - KEY.blackSlope, width: KEY.blackWidth - 2.4, height: 0.5 }));
+    }
+
+    // The rail along the back, with the red felt where it meets the keys.
+    svg.appendChild(svgElement('rect', { class: 'kb-rail', x: 0, y: 0, width, height: KEY.rail }));
+    svg.appendChild(svgElement('rect', { class: 'kb-felt', x: 0, y: KEY.rail - 1.6, width, height: 1.6 }));
+
+    whiteKeys.forEach((key, index) => {
+      if (key.note) svg.appendChild(keyMarker(key.note, (index + 0.5) * KEY.width, KEY.rail + KEY.length - 10.5, 8, 8.6));
+    });
+    for (const key of blackKeys) {
+      if (key.note) svg.appendChild(keyMarker(key.note, blackX(key) + KEY.blackWidth / 2, KEY.rail + KEY.blackLength - KEY.blackSlope - 7, 6.3, 7.4));
+    }
+
+    keyboardEl.style.setProperty('--white-keys', whiteKeys.length);
+    keyboardEl.replaceChildren(svg);
   }
 
   function svgElement(name, attributes) {
