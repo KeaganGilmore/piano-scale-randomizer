@@ -10,9 +10,9 @@ const vm = require('node:vm');
 // scales.js is a plain browser script, so run it in a sandbox and read back its globals.
 const context = vm.createContext({ Math });
 vm.runInContext(fs.readFileSync(path.join(__dirname, '..', 'scales.js'), 'utf8'), context);
-const { SCALE_TYPES, buildScale, spellScale, parseDegrees, describeNote, keyboardFor, scalesIn, createDealer } =
+const { SCALE_TYPES, buildScale, spellScale, parseDegrees, describeNote, keyboardFor, staffPosition, scalesIn, createDealer } =
   vm.runInContext(
-    '({ SCALE_TYPES, buildScale, spellScale, parseDegrees, describeNote, keyboardFor, scalesIn, createDealer })',
+    '({ SCALE_TYPES, buildScale, spellScale, parseDegrees, describeNote, keyboardFor, staffPosition, scalesIn, createDealer })',
     context,
   );
 
@@ -202,6 +202,18 @@ test('every scale lights exactly its own eight keys', () => {
       }
     }
   }
+});
+
+/* ---------- Staff ---------- */
+
+test('notes sit on the staff by letter, counted in steps from middle C', () => {
+  const positions = (notes) => notes.map(staffPosition).join(' ');
+  assert.equal(positions(spellScale(tonic('C'), major.degrees)), '0 1 2 3 4 5 6 7');
+  assert.equal(positions(spellScale(tonic('Db'), major.degrees)), '1 2 3 4 5 6 7 8');
+  // C flat is written on C's line even though it sounds a semitone lower.
+  assert.equal(positions(spellScale(tonic('Cb'), major.degrees)), '0 1 2 3 4 5 6 7');
+  // E sharp sits on E's line, not F's.
+  assert.equal(positions(spellScale(tonic('F#'), major.degrees)), '3 4 5 6 7 8 9 10');
 });
 
 /* ---------- Dealing ---------- */

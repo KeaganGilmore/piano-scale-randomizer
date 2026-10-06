@@ -156,6 +156,17 @@ function keyboardFor(notes) {
   return { whiteKeys, blackKeys };
 }
 
+/* ---------- Staff ---------- */
+
+/**
+ * Where a note is written on the staff, in steps from middle C (C = 0, D = 1 … the
+ * C above = 7). It goes by letter, so C♭ shares C's line and E♯ shares E's.
+ */
+function staffPosition(note) {
+  const natural = note.pitch - note.accidental;
+  return 7 * Math.floor(natural / 12) + LETTER_PITCHES.indexOf(mod(natural, 12));
+}
+
 /* ---------- Dealing ---------- */
 
 /** Every scale in a filter group ('all', 'major', 'minor'), as { type, pitchClass } for each of the 12 roots. */

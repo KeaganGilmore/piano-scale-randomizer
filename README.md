@@ -9,6 +9,7 @@ A random piano scale to practice, readable from the music stand. Open it on your
 - **Next scale:** tap the button, swipe left across the scale, or press <kbd>Space</kbd> or <kbd>→</kbd>.
 - **Filter:** All, Major or Minor, at the top left. Tapping the active filter also deals the next scale.
 - **Keyboard diagram:** the scale's keys are lit on a picture of the piano and labelled with their notes, so beginners can see exactly which keys to play.
+- **Sheet music:** the scale is also written on a treble staff, beside the keyboard on wide screens and below it on phones. Very short phone screens leave it out to keep everything on one screen.
 - Scales come in shuffled rounds: every scale in the filter appears once before any repeats, and the same scale never appears twice in a row.
 - Light and dark mode follow your device. The button at the top right overrides that, and the choice is remembered on that device.
 - On a phone, **Add to Home Screen** opens it like an app, without the browser's address bar.
@@ -45,16 +46,16 @@ Add one line to `SCALE_TYPES` in [`scales.js`](scales.js):
 node --test
 ```
 
-Needs Node 18 or newer and nothing else. The tests cover the spelling of all 24 scales (and harmonic minor, melodic minor and Dorian as examples of new types), the keyboard layout, the shuffled rounds, and that the filter buttons and scale groups match.
+Needs Node 18 or newer and nothing else. The tests cover the spelling of all 24 scales (and harmonic minor, melodic minor and Dorian as examples of new types), the keyboard layout, staff positions, the shuffled rounds, and that the filter buttons and scale groups match.
 
 ## Files
 
 | File | Purpose |
 | --- | --- |
-| `index.html` | Page structure, including the engraved sharp and flat glyphs |
-| `styles.css` | Layout, the keyboard diagram, and light/dark themes |
+| `index.html` | Page structure, including the engraved sharp and flat glyphs and the treble clef and whole note from the [Bravura](https://github.com/steinbergmedia/bravura) music font (SIL Open Font License) |
+| `styles.css` | Layout, the keyboard and staff, and light/dark themes |
 | `scales.js` | The list of scales, how they're spelled, where they sit on the keyboard, and the order they're dealt in |
-| `script.js` | Drawing the scale and keyboard, the controls, keyboard and swipe input, theme switching |
+| `script.js` | Drawing the scale, keyboard and staff, the controls, keyboard and swipe input, theme switching |
 | `manifest.webmanifest`, `icons/` | Browser tab and home screen icons |
 | `tests/` | Unit tests for `scales.js` |
 

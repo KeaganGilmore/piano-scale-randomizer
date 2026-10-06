@@ -1,6 +1,6 @@
 /*
  * Page behavior: deals random scales and wires up the controls.
- * The scales themselves (spelling, keyboard layout, dealing order) live in scales.js.
+ * The scales themselves (spelling, keyboard and staff positions, dealing order) live in scales.js.
  */
 (function () {
   'use strict';
@@ -21,6 +21,8 @@
   const spokenNameEl = document.getElementById('scale-spoken');
   const notesEl = document.getElementById('notes');
   const keyboardEl = document.getElementById('keyboard');
+  const staffEl = document.getElementById('staff');
+  const diagramsEl = scaleArea.querySelector('.diagrams');
   const announcer = document.getElementById('announcer');
   const nextButton = document.getElementById('next');
   const themeButton = document.getElementById('theme-toggle');
@@ -95,6 +97,71 @@
     );
   }
 
+  function svgElement(name, attributes) {
+    const element = document.createElementNS(SVG_NS, name);
+    for (const [key, value] of Object.entries(attributes)) element.setAttribute(key, value);
+    return element;
+  }
+
+  /**
+   * Writes the scale on a treble staff in whole notes. Units are staff spaces: the five
+   * lines sit at y = 0…4, and each step up the staff (line to space) is half a space.
+   */
+  function renderStaff(notes) {
+    const GLYPH_SCALE = 'scale(0.004 -0.004)'; // Bravura font units (250 per space, y up) to staff spaces
+    const ACCIDENTALS = {
+      '-2': { glyph: 'double-flat', width: 1.54, height: 2.4, center: 0.735 },
+      '-1': { glyph: 'flat', width: 0.91, height: 2.4, center: 0.735 },
+      1: { glyph: 'sharp', width: 1.12, height: 2.8, center: 0.5 },
+      2: { glyph: 'double-sharp', width: 1, height: 1, center: 0.5 },
+    };
+    const NOTE_WIDTH = 1.69;
+    const FIRST_NOTE = 4.4;
+    const SLOT = 3.7;
+    const top = -2.2;
+    const width = FIRST_NOTE + notes.length * SLOT + 1;
+    const height = 8.4;
+    const lineY = (position) => 5 - position / 2; // middle C (0) sits one ledger line below the staff
+
+    const parts = [];
+    for (let line = 0; line < 5; line++) {
+      parts.push(svgElement('line', { class: 'staff-line', x1: 0, x2: width - 0.6, y1: line, y2: line }));
+    }
+    parts.push(svgElement('use', { href: '#treble-clef', transform: `translate(0.4 3) ${GLYPH_SCALE}` }));
+
+    notes.forEach((note, index) => {
+      const position = staffPosition(note);
+      const y = lineY(position);
+      const x = FIRST_NOTE + index * SLOT + 1.5;
+      // Ledger lines for notes above or below the staff.
+      for (let ledger = 0; ledger >= position; ledger -= 2) {
+        parts.push(svgElement('line', { class: 'staff-line', x1: x - 0.4, x2: x + NOTE_WIDTH + 0.4, y1: lineY(ledger), y2: lineY(ledger) }));
+      }
+      for (let ledger = 12; ledger <= position; ledger += 2) {
+        parts.push(svgElement('line', { class: 'staff-line', x1: x - 0.4, x2: x + NOTE_WIDTH + 0.4, y1: lineY(ledger), y2: lineY(ledger) }));
+      }
+      const accidental = ACCIDENTALS[note.accidental];
+      if (accidental) {
+        parts.push(svgElement('use', {
+          href: `#${accidental.glyph}`,
+          x: x - accidental.width - 0.25,
+          y: y - accidental.height * accidental.center,
+          width: accidental.width,
+          height: accidental.height,
+        }));
+      }
+      parts.push(svgElement('use', { href: '#whole-note', transform: `translate(${x} ${y}) ${GLYPH_SCALE}` }));
+    });
+
+    // Final barline: thin then thick.
+    parts.push(svgElement('rect', { x: width - 1.3, y: 0, width: 0.16, height: 4 }));
+    parts.push(svgElement('rect', { x: width - 1, y: 0, width: 0.5, height: 4 }));
+
+    staffEl.setAttribute('viewBox', `0 ${top} ${width} ${height}`);
+    staffEl.style.aspectRatio = `${width} / ${height}`;
+    staffEl.replaceChildren(...parts);
+  }
+
   function announce(message) {
     announcer.textContent = message;
     // Clear it once it has been read out, so reading through the page later doesn't hear the scale twice.
@@ -111,6 +178,7 @@
     spokenNameEl.textContent = name;
     notesEl.replaceChildren(...scale.notes.map(noteItem));
     renderKeyboard(scale.notes);
+    renderStaff(scale.notes);
     announce(`${name}: ${scale.notes.map(describeNote).join(', ')}`);
   }
 
@@ -124,7 +192,7 @@
     const timing = { duration: 280, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' };
     scaleName.animate(frames, timing);
     notesEl.animate(frames, { ...timing, delay: 40, fill: 'backwards' });
-    keyboardEl.animate(frames, { ...timing, delay: 80, fill: 'backwards' });
+    diagramsEl.animate(frames, { ...timing, delay: 80, fill: 'backwards' });
   }
 
   function showNextScale() {

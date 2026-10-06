@@ -17,6 +17,7 @@
   --key-ink: #f5f5f2;
   --key-shine: rgba(255, 255, 255, 0.1);
   --kbd-edge: #cfcfc8;
+  --staff-line: #8c8c85;
   --rail: #1a1a1a;
   --ivory: #fff;
   --ivory-shade: #ebeae4;
@@ -54,6 +55,7 @@
     --key-ink: #edede8;
     --key-shine: rgba(255, 255, 255, 0.08);
     --kbd-edge: #3a3a38;
+    --staff-line: #77776f;
     --rail: #262626;
     --ivory: #d6d6cf;
     --ivory-shade: #b9b9b2;
@@ -87,6 +89,7 @@
   --key-ink: #edede8;
   --key-shine: rgba(255, 255, 255, 0.08);
   --kbd-edge: #3a3a38;
+  --staff-line: #77776f;
   --rail: #262626;
   --ivory: #d6d6cf;
   --ivory-shade: #b9b9b2;
@@ -265,7 +268,7 @@ button {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 1rem 0 1.5rem;
+  padding: 0.75rem 0 1rem;
   text-align: center;
   /* Leave horizontal swipes to the page (swipe left for the next scale); keep scrolling and zoom. */
   touch-action: pan-y pinch-zoom;
@@ -287,8 +290,8 @@ button {
 
 .tonic {
   display: block;
-  font-size: clamp(4.5rem, min(40vw, 21vh), 14rem);
-  font-size: clamp(4.5rem, min(40vw, 21svh), 14rem);
+  font-size: clamp(4.5rem, min(38vw, 18vh), 14rem);
+  font-size: clamp(4.5rem, min(38vw, 18svh), 14rem);
   font-weight: 600;
   line-height: 1;
   letter-spacing: -0.03em;
@@ -352,7 +355,36 @@ button {
   vertical-align: 0.13em;
 }
 
-/* ---------- Keyboard diagram: where the scale sits on the piano ---------- */
+/* ---------- Keyboard and staff: where the scale sits on the piano and in print ---------- */
+
+.diagrams {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(0.5rem, 1.5vh, 1.5rem);
+  gap: clamp(0.5rem, 1.5svh, 1.5rem);
+  width: 100%;
+  margin-top: clamp(1rem, 3.5vh, 2.5rem);
+  margin-top: clamp(1rem, 3.5svh, 2.5rem);
+}
+
+/* The staff is the secondary view: smaller than the keyboard, in the same ink as the notes. */
+.staff {
+  display: block;
+  width: auto;
+  max-width: 100%;
+  height: min(5rem, 9.5vh);
+  height: min(5rem, 9.5svh);
+  overflow: visible;
+  color: var(--ink);
+  fill: currentColor;
+}
+
+.staff-line {
+  stroke: var(--staff-line);
+  stroke-width: 0.12;
+}
+
 
 /* Drawn like a real keyboard seen from above: a lacquer rail with the red felt strip
    along the back, white keys with a front edge, and raised black keys that cast a shadow. */
@@ -364,8 +396,6 @@ button {
   max-width: 100%;
   height: min(calc(var(--white-key) * 2.6), 13vh);
   height: min(calc(var(--white-key) * 2.6), 13svh);
-  margin-top: clamp(1rem, 3.5vh, 2.5rem);
-  margin-top: clamp(1rem, 3.5svh, 2.5rem);
   overflow: hidden; /* crops the black keys that hang over either end */
   border: 1px solid var(--key-line);
   border-top: 6px solid var(--rail);
@@ -541,14 +571,31 @@ kbd {
     font-size: clamp(4.5rem, min(40vw, 22svh), 14rem);
   }
 
+  :root {
+    --white-key-desktop: clamp(2.5rem, 3.6vw, 3.25rem);
+  }
+
   .keyboard {
-    --white-key: clamp(2.5rem, 3.6vw, 3.25rem);
+    --white-key: var(--white-key-desktop);
     height: min(calc(var(--white-key) * 2.6), 14vh);
     height: min(calc(var(--white-key) * 2.6), 14svh);
   }
 
   .next {
     max-width: 20rem;
+  }
+
+  .staff {
+    height: min(calc(var(--white-key-desktop) * 2.6), 14vh);
+    height: min(calc(var(--white-key-desktop) * 2.6), 14svh);
+  }
+}
+
+@media (min-width: 64rem) {
+  .diagrams {
+    flex-direction: row;
+    justify-content: center;
+    gap: 2.5rem;
   }
 }
 
@@ -572,7 +619,15 @@ kbd {
   .keyboard {
     height: min(calc(var(--white-key) * 2.6), 12vh);
     height: min(calc(var(--white-key) * 2.6), 12svh);
+  }
+
+  .diagrams {
     margin-top: 0.75rem;
+  }
+
+  /* Too short for the staff as well; the keyboard and note names carry the scale. */
+  .staff {
+    display: none;
   }
 
   .next {
@@ -586,7 +641,7 @@ kbd {
     display: grid;
     grid-template-areas:
       "name notes"
-      "name keyboard";
+      "name diagrams";
     align-content: center;
     justify-content: center;
     align-items: center;
@@ -612,12 +667,21 @@ kbd {
     font-size: clamp(1.25rem, 8svh, 2.25rem);
   }
 
+  .diagrams {
+    grid-area: diagrams;
+    flex-direction: row;
+    justify-content: center;
+    gap: 1rem;
+    margin: 0;
+  }
+
   .keyboard {
     --white-key: clamp(1.25rem, 8vh, 2.25rem);
-    grid-area: keyboard;
-    justify-self: center;
     height: calc(var(--white-key) * 2.6);
-    margin: 0;
+  }
+
+  .staff {
+    height: calc(clamp(1.25rem, 8vh, 2.25rem) * 2.6);
   }
 
   /* A custom property can't fall back on its own, so only switch to svh where it's understood. */
@@ -625,10 +689,21 @@ kbd {
     .keyboard {
       --white-key: clamp(1.25rem, 8svh, 2.25rem);
     }
+
+    .staff {
+      height: calc(clamp(1.25rem, 8svh, 2.25rem) * 2.6);
+    }
   }
 
   .next {
     min-height: 3.25rem;
+  }
+}
+
+/* Small phones sideways: no room for the staff next to the keyboard. */
+@media (orientation: landscape) and (max-height: 30rem) and (max-width: 50rem) {
+  .staff {
+    display: none;
   }
 }
 
